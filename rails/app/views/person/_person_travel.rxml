@@ -53,6 +53,10 @@ xml.div(:id=>'content-travel') do
       xml << check_box_row( @conference_person_travel, :need_accommodation )
       xml << check_box_row( @conference_person_travel, :need_accommodation_cost )
       xml << money_currency_row( @conference_person_travel, :accommodation_cost, :accommodation_currency )
+      xml.tr do
+        xml.td do xml.label 'Room Mate' end
+        xml.td do xml << select_tag('conference_person_travel[accommodation_mate_id]', View_person.select.map{|p| [p.person_id, p.name]},{:with_empty=>true, :selected => @conference_person_travel[:accommodation_mate_id]}) end
+      end
     end
   end
 

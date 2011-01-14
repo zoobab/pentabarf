@@ -25,6 +25,7 @@ CREATE TABLE base.conference_person_travel (
   accommodation_city TEXT,
   accommodation_phone TEXT,
   accommodation_phone_room TEXT,
+  accommodation_mate_id INTEGER,
   arrived BOOL NOT NULL DEFAULT FALSE,
   fee DECIMAL(16,2),
   fee_currency TEXT NOT NULL,
