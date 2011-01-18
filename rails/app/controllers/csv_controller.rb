@@ -61,6 +61,14 @@ class CsvController < ApplicationController
     end
   end
 
+  def hotel
+    rows = View_hotel_list.select
+    header = ['Name', 'Room Mate', 'Room Type', 'Hotel']
+    generate_csv( rows, 'hotel.csv', header) do | d |
+      [ d.name, d.room_mate, d.roomtype, d.accommodation_name ]
+    end
+  end
+
   protected
 
   def check_permission
