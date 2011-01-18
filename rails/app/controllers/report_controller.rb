@@ -16,6 +16,11 @@ class ReportController < ApplicationController
     end
   end
 
+  def hotel
+    @content_title = "Hotel Report"
+    @rows = View_hotel_list.select.select { |row| row['accommodation_name'] =~ /novotel/i }
+  end
+
   def pickup
     @content_title = "Pickup Report"
     @rows = View_report_pickup.select(:conference_id=>@current_conference.conference_id,:translated=>POPE.user.current_language)

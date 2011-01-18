@@ -1,0 +1,27 @@
+xml.div({:id=>:data}) do
+
+  xml.table({:id=>:report_hotel_table,:class=>:sortable}) do
+    xml.thead do
+      xml.tr do
+        xml.th "ID"
+        xml.th "Name"
+        xml.th "Room Mate"
+        xml.th "Room Type"
+      end
+    end
+
+    xml.tbody do
+      @rows.each_with_index do | row, index |
+        xml.tr do
+          xml.td index.to_s
+          xml.td row.name
+          xml.td row.room_mate
+          xml.td row.roomtype 
+        end
+      end
+    end
+
+  end
+
+end
+
