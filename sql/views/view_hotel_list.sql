@@ -1,7 +1,7 @@
 
 CREATE OR REPLACE VIEW view_hotel_list AS
   SELECT name,
-    ( SELECT name FROM view_conference_person WHERE conference_person_id = accommodation_mate_id) AS room_mate,
+    ( SELECT name FROM view_conference_person WHERE person_id = accommodation_mate_id) AS room_mate,
     roomtype,
     accommodation_name,
     affiliation,
