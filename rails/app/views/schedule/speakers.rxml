@@ -19,7 +19,8 @@ xml.div(:id=>'speaker-index',:class=>'section') do
           end
           xml.td(:class=>'events') do
             xml.ul(:class=>'events') do 
-              person.events({:translated=>@current_language}).each do | event |
+              #View_event_person.select(:person_id => @speaker.person_id, :conference_id => @conference.conference_id}, :event_role=>['speaker','moderator'], :translated=>@current_language ).each do | event |
+              View_event_person.select(:person_id => person.person_id, :conference_id => @conference.conference_id, :translated=>@current_language).each do | event |
                 xml.li do
                   xml.a(event.title, {:href=>url_for(:conference_id=>@conference.conference_id,:action=>:event,:language=>params[:language],:id=>event.event_id)})
                 end
