@@ -1,21 +1,25 @@
 xml.div(:id=>'infobox') do
+  if @event.respond_to?( :speaker_ids ) && @event.speaker_ids
   xml.table do
     xml.tr do
       xml.th( local( 'schedule::speakers' ),{:colspan=>'2'})
     end
-    @event.persons.each do | person |
+    ids = @event.speaker_ids.split("\n")
+    names = @event.speakers.split("\n")
+    ids.each_with_index do | id, index |
       xml.tr do
         xml.td do
-          xml.a(:href=>url_for(:conference_id=>@conference.conference_id,:action=>:speaker,:id=>person.person_id,:language=>params[:language])) do
-            xml.img(:src=>person_image( person.person_id, 32),:height=>32,:width=>32)
+          xml.a(:href=>url_for(:conference_id=>@conference.conference_id,:action=>:speaker,:id=>id,:language=>params[:language])) do
+            xml.img(:src=>person_image( id, 32),:height=>32,:width=>32)
           end
         end
         xml.td do
-          xml.a(person.name,{:href=>url_for(:conference_id=>@conference.conference_id,:action=>:speaker,:language=>params[:language],:id=>person.person_id)})
+          xml.a(names[index],{:href=>url_for(:conference_id=>@conference.conference_id,:action=>:speaker,:language=>params[:language],:id=>id)})
         end
       end
     end
-  end if @event.persons.length > 0
+  end
+  end
 
   xml.table do
     xml.tr do xml.th( local('schedule::schedule'),{:colspan=>2}) end
