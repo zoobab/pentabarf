@@ -10,6 +10,6 @@ CREATE OR REPLACE VIEW view_hotel_list AS
   FROM view_conference_person
       JOIN conference_person_travel USING (conference_person_id)
       JOIN custom.custom_conference_person USING (person_id)
-  ORDER BY affiliation
+  ORDER BY affiliation, name
 ;
 
