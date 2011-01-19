@@ -36,7 +36,7 @@ class IcalController < ApplicationController
 #      add_component( daylight )
 #    end
 
-    conf.events(:translated=>@current_language).each do | event |
+    View_schedule.select({:translated=>@current_language}).each do | event |
       cal.event do
         uid "#{event.event_id}@#{conf.acronym}@pentabarf.org"
         dtstamp Time.now.strftime('%Y%m%dT%H%M%S')
