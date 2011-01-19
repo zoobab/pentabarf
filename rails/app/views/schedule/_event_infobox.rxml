@@ -7,14 +7,16 @@ xml.div(:id=>'infobox') do
     ids = @event.speaker_ids.split("\n")
     names = @event.speakers.split("\n")
     ids.each_with_index do | id, index |
-      xml.tr do
-        xml.td do
-          xml.a(:href=>url_for(:conference_id=>@conference.conference_id,:action=>:speaker,:id=>id,:language=>params[:language])) do
-            xml.img(:src=>person_image( id, 32),:height=>32,:width=>32)
+      if names[index].include? "(Speaker)"
+        xml.tr do
+          xml.td do
+            xml.a(:href=>url_for(:conference_id=>@conference.conference_id,:action=>:speaker,:id=>id,:language=>params[:language])) do
+              xml.img(:src=>person_image( id, 32),:height=>32,:width=>32)
+            end
           end
-        end
-        xml.td do
-          xml.a(names[index],{:href=>url_for(:conference_id=>@conference.conference_id,:action=>:speaker,:language=>params[:language],:id=>id)})
+          xml.td do
+            xml.a(names[index],{:href=>url_for(:conference_id=>@conference.conference_id,:action=>:speaker,:language=>params[:language],:id=>id)})
+          end
         end
       end
     end

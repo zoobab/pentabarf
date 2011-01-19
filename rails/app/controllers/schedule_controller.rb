@@ -67,7 +67,7 @@ class ScheduleController < ApplicationController
   def speaker
     @speaker = Person.select_single(:person_id=>params[:id])
     raise StandardError unless @speaker
-    @speaker_events = #View_event_person.select(:person_id => @speaker.person_id, :conference_id => @conference.conference_id}, :event_role=>['speaker','moderator'], :translated=>@current_language ).each do | event |
+    #@speaker_events = View_event_person.select(:person_id => @speaker.person_id, :conference_id => @conference.conference_id, :event_role=>['speaker','moderator'], :translated=>@current_language ).each do | event |
     @speaker_events = View_event_person.select(:person_id => @speaker.person_id, :conference_id => @conference.conference_id, :translated=>@current_language)
     @conference_speaker = Conference_person.select_single({:conference_id=>@conference.conference_id, :person_id=>@speaker.person_id})
     @speaker_links = Conference_person_link.select(:conference_person_id => @conference_speaker.conference_person_id)
@@ -76,7 +76,8 @@ class ScheduleController < ApplicationController
   end
 
   def speakers
-    @speakers = View_person.select({},{:order=>[:name]})
+    #@speakers = View_person.select({},{:order=>[:name]})
+    @speakers = View_event_person.select(:conference_id => @conference.conference_id, :event_role=>['speaker'])
     @content_title = local(:speakers)
   end
 
