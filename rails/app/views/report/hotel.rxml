@@ -7,16 +7,25 @@ xml.div({:id=>:data}) do
         xml.th "Name"
         xml.th "Room Mate"
         xml.th "Room Type"
+        xml.th "Affiliation"
+        xml.th "Arrival Date"
+        xml.th "Departure Date"
       end
     end
 
+    already_in_list = []
     xml.tbody do
       @rows.each_with_index do | row, index |
+        next if already_in_list.include? row.room_mate
+        already_in_list << row.name
         xml.tr do
           xml.td index.to_s
           xml.td row.name
           xml.td row.room_mate
-          xml.td row.roomtype 
+          xml.td row.roomtype
+          xml.td row.affiliation
+          xml.td row.arrival_date
+          xml.td row.departure_date
         end
       end
     end
