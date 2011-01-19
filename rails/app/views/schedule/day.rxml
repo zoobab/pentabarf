@@ -1,8 +1,12 @@
 xml.div(:id=>'schedule',:class=>'section') do
   xml.h1 @content_title
+  print "TIAS: in schedule/day view\n"
+  # Following added by TIAS, where should it have been created???
+  @events = @conference.event.select{|e| e.conference_day.conference_day == @day.conference_day}
   table = schedule_table( @conference, @events )[@day.conference_day.to_s]
 
   used_rooms = schedule_rooms( table, @rooms )
+  print "TIAS: used_rooms", used_rooms, "\n"
   xml.table do
     xml.thead do
       xml.tr do
@@ -45,7 +49,10 @@ xml.div(:id=>'schedule',:class=>'section') do
                 xml.ul(:class=>'speakers') do
                   event.persons.each do | person |
                     xml.li do
-                      xml.a(person.name, {:href=>url_for(:action=>:speaker,:id=>person.person_id,:conference_id=>@conference.conference_id,:language=>params[:language])})
+                      #xml.a(person.name, {:href=>url_for(:action=>:speaker,:id=>person.person_id,:conference_id=>@conference.conference_id,:language=>params[:language])})
+                      name = Person.select_single( :person_id => person.person_id ).name
+                      print "TIAS: name is",name,"\n"
+                      xml.a(name, {:href=>url_for(:action=>:speaker,:id=>person.person_id,:conference_id=>@conference.conference_id,:language=>params[:language])})
                     end
                   end
                 end
@@ -53,11 +60,12 @@ xml.div(:id=>'schedule',:class=>'section') do
                   xml.a({:href=>url_for(:action=>:event,:id=>event_id,:conference_id=>@conference.conference_id,:language=>params[:language])} ) do
                     xml.div({:class=>'language-info'}) do
                       xml.text! local('event::language')
-                      xml.span(event.language_name,{:class=>'language'})
+                      xml.span(event.language,{:class=>'language'})
                     end if event.language
                     xml.div({:class=>'type-info'}) do
                       xml.text! local('event::event_type')
-                      xml.span(event.event_type_name,{:class=>'type'})
+                      #xml.span(event.event_type_name,{:class=>'type'})
+                      xml.span(event.event_type,{:class=>'type'})
                     end if event.event_type
                     xml.div({:class=>'track-info'}) do
                       xml.text! local('event::conference_track')
@@ -67,6 +75,8 @@ xml.div(:id=>'schedule',:class=>'section') do
                 end
               end
             end
+            	    #print "TIAS: reachable\n"
+            	    #print "TIAS: not reachable\n"
 
           end
         end
