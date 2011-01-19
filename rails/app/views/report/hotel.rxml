@@ -19,7 +19,7 @@ xml.div({:id=>:data}) do
         next if already_in_list.include? row.room_mate
         already_in_list << row.name
         xml.tr do
-          xml.td index.to_s
+          xml.td (index + 1).to_s
           xml.td row.name
           xml.td row.room_mate
           xml.td row.roomtype
