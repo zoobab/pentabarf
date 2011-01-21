@@ -4,6 +4,9 @@ xml.div(:id=>'event-index',:class=>'section') do
       xml.tr do
         xml.th( local( 'schedule::event' ),{:class=>'event'})
         xml.th( local( 'schedule::speakers' ),{:class=>'speaker'})
+        xml.th( local( 'schedule::room' ),{:class=>'room'})
+        xml.td( local( 'schedule::start_time' ),{:class=>'start_time'})
+        xml.td( local( 'event::duration' ),{:class=>'duration'})
       end
     end
     xml.tbody do
@@ -26,6 +29,7 @@ xml.div(:id=>'event-index',:class=>'section') do
             xml.p(:class=>'subtitle') do
               xml.a(event.subtitle,{:href=>url_for(event_url)})
             end
+            if not defined? @show_info
             xml.p(:class=>'info') do
               xml.a({:href=>url_for(event_url)}) do
                 if event.event_type
@@ -48,6 +52,7 @@ xml.div(:id=>'event-index',:class=>'section') do
                 end
               end
             end
+            end
           end
           if event.respond_to?( :speaker_ids ) && event.speaker_ids
             xml.td(:class=>"speakers #{sanitize_track(event.conference_track)}") do
@@ -64,6 +69,17 @@ xml.div(:id=>'event-index',:class=>'section') do
               end
             end
           end
+
+          xml.td(:class=>"room #{sanitize_track(event.conference_track)}") do
+            xml << event.conference_room
+          end
+          xml.td(:class=>"start_time #{sanitize_track(event.conference_track)}") do
+            xml << event.start_time.strftime('%H:%M')
+          end
+          xml.td(:class=>"duration #{sanitize_track(event.conference_track)}") do
+            xml << event.duration.strftime('%H:%M')
+          end
+
         end
       end
     end
