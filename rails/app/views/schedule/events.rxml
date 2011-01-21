@@ -55,8 +55,10 @@ xml.div(:id=>'event-index',:class=>'section') do
                 ids = event.speaker_ids.split("\n")
                 names = event.speakers.split("\n")
                 ids.each_with_index do | id, index |
-                  xml.li do
-                    xml.a(names[index],{:href=>url_for(:conference_id=>@conference.conference_id,:action=>:speaker,:language=>params[:language],:id=>id)})
+                  if names[index].include? "(Speaker)"
+                    xml.li do
+                      xml.a(names[index],{:href=>url_for(:conference_id=>@conference.conference_id,:action=>:speaker,:language=>params[:language],:id=>id)})
+                    end
                   end
                 end
               end
