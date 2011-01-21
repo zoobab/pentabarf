@@ -61,6 +61,7 @@ class ScheduleController < ApplicationController
     @track = Conference_track.select_single(:conference_track=>params[:track])
     raise StandardError unless @track
     @events = View_schedule.select({:conference_track=>params[:track],:translated=>@current_language})
+    @show_info = true
     render(:action=>:events)
   end
 
