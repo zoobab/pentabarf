@@ -29,8 +29,6 @@ xml.ul do
 
 end
 
-xml << "Tracks:"
-
 xml.ul do
 
   links = []
@@ -43,7 +41,11 @@ xml.ul do
       "#{t.conference_track}"
     ]
   end
-  
+
+  links << [
+    url_for({:conference_id=>@conference.conference_id,:action=>:events,:language=>params[:language]}), local('schedule::map-events'),
+    url_for({:conference_id=>@conference.conference_id,:action=>:speakers,:language=>params[:language]}), local('schedule::map-speakers')
+  ]
 
   links.each do | link |
     xml.li do
@@ -54,3 +56,4 @@ xml.ul do
   end
 
 end
+
