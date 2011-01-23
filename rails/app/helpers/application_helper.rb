@@ -66,6 +66,7 @@ module ApplicationHelper
     events.each do | event |
       slots = (event.duration.hour * 3600 + event.duration.min * 60)/timeslot_seconds
       start_slot = (event.start_offset.hour * 3600 + event.start_offset.min * 60) / timeslot_seconds
+      next if table[event.conference_day.to_s].nil?
       next if table[event.conference_day.to_s][start_slot][event.conference_room_id]
       table[event.conference_day.to_s][start_slot][event.conference_room_id] = {:event_id => event.event_id, :slots => slots}
       slots.times do | i |

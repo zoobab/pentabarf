@@ -1,6 +1,10 @@
 xml.div(:id=>'schedule',:class=>'section') do
   xml.h1 @content_title
-  table = schedule_table( @conference, @events )[@day.conference_day.to_s]
+  table = schedule_table( @conference, @events )
+  unless table.nil?
+    # select the right day, if non-zero
+    table = table[@day.conference_day.to_s]
+  end
 
   used_rooms = schedule_rooms( table, @rooms )
   xml.table do
