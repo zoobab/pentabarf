@@ -17,7 +17,7 @@ xml.schedule do
       @conference.rooms.each do | room |
         xml.room({:name => room.conference_room}) do
           room_events = {}
-          @conference.events.select{|e| e.conference_day == day.conference_day && e.conference_room == room.conference_room}.each do | event |
+          View_schedule.select({:conference_day=>day.conference_day, :conference_room => room.conference_room}).each do | event |
             next if room_events.values.member?( event.event_id )
             room_events[event.start_time.strftime('%H:%M')] = event.event_id
           end
