@@ -54,13 +54,13 @@ class ScheduleController < ApplicationController
   end
 
   def events
-    @events = View_schedule.select({:translated=>@current_language, :public=>true},{:order=>[:title,:subtitle]})
+    @events = View_schedule.select({:translated=>@current_language, :public=>true},{:order=>[:start_time,:title,:subtitle]})
   end
 
   def track_events
     @track = Conference_track.select_single(:conference_track=>params[:track])
     raise StandardError unless @track
-    @events = View_schedule.select({:conference_track=>params[:track],:translated=>@current_language, :public=>true})
+    @events = View_schedule.select({:conference_track=>params[:track],:translated=>@current_language, :public=>true},{:order=>[:start_time,:title,:subtitle]})
     @show_info = true
     render(:action=>:events)
   end
