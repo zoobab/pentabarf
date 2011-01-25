@@ -21,7 +21,7 @@ xml.div(:id=>'track-index',:class=>'section') do
           if @track_rooms.has_key?(track.conference_track_id) and not @track_rooms[track.conference_track_id].empty? then
             xml.td do
               @track_rooms[track.conference_track_id].each do |room|
-                xml.a(room.conference_room,{:href=>"../"+url_for(:action=>:room, :room=>room.conference_room)})
+                xml.a(room.conference_room,{:href=>url_for(:action=>:room, :room=>room.conference_room)})
               end
             end
           else
