@@ -183,42 +183,50 @@ xml.div(:id=>'event',:class=>'section eventpage') do
   #  end
   #end
 
-  sametime_events = @events.select {|e| e.event_id != @event.event_id and ((e.start_datetime <= @event.start_datetime and e.end_datetime >= @event.start_datetime) or (e.start_datetime >= @event.start_datetime and e.start_datetime < @event.end_datetime)) }.sort_by {|e| e.start_time}
-  if not sametime_events.empty? then
+  [
+    ['sametime', 'Concurrent events', lambda {|e| event_sametime(e, @event) }, (0 .. -1), true],
+    ['sameroom', "Next (up to 3) talks in the same room (#{@event.conference_room})", lambda {|e| event_next_in_room(e, @event) }, (0 .. 2), false],
+    ['upcoming', 'Events that start after this one (within 30 minutes)', lambda {|e| event_is_upcoming_to(e, @event, 30.minutes) }, (0 .. -1), true]
+  ].each do |css, heading, selector, slicer, with_room|
+    event_list = @events.select{|e| e.event_id != @event.event_id and selector.call(e) }.sort_by{|e| [((e.conference_room_id==@event.conference_room_id)? 1 : 0),e.start_time,e.duration]}.slice(slicer)
+    next if event_list.empty?
+
     c = 0
-    xml.div(:class=>'sametime', :id=>'event-sametime') do
-      xml.h2('Other events at the same time:')
-      xml.table() do
-        xml.thead() do
-          xml.tr() do
+    xml.div(:class=>css, :id=>"event-#{css}") do
+      xml.h2("#{heading}:")
+      xml.table do
+        xml.thead do
+          xml.tr do
             xml.th('When',{:class=>'start-time'})
             xml.th(local('schedule::event'),{:class=>'event'})
             xml.th(local('schedule::conference_track'),{:class=>'event'})
-            xml.th('Where',{:class=>'event room'})
+            xml.th('Where',{:class=>'event'}) if with_room
           end # tr
         end # thead
-        xml.tbody() do
-          sametime_events.each do |e|
+        xml.tbody do
+          event_list.each do |e|
             c += 1
             trclass = (c % 2 == 1) ? "even" : "odd"
             xml.tr(:class=>trclass) do
-              xml.td() do
+              xml.td do
                 xml << "#{e.start_time.strftime('%H:%M')}-#{(e.start_time + e.duration).strftime('%H:%M')}"
               end # td
-              xml.td() do
+              xml.td do
                 xml.a(e.title, {:href=>'../'+url_for(:action=>:event, :slug=>e.slug)})
               end # td
               xml.td(:class=>"track-#{e.conference_track.urlify}") do
-                xml.a(e.conference_track, {:href=>'../'+url_for(:action=>:track, :track=>e.conference_track)})
+                xml.a(e.conference_track.shorttrack, {:href=>'../'+url_for(:action=>:track, :track=>e.conference_track)})
               end # td
-              xml.td() do
-                xml.a(e.conference_room, {:href=>'../'+url_for(:action=>:room, :room=>e.conference_room)})
-              end
+              if with_room then
+                xml.td do
+                  xml.a(e.conference_room, {:href=>'../'+url_for(:action=>:room, :room=>e.conference_room)})
+                end
+              end #with_room
             end # tr
-          end # sametime_events.each
+          end # event_list.each
         end # tbody
       end # table
     end # div
-  end # if not sametime_event_ids.empty?
+  end # array each
 
 end

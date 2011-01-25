@@ -10,7 +10,8 @@ require 'ftools'
 require 'set'
 require 'RMagick'
 
-lang = 'en'
+@lang = 'en'
+@language = 'English'
 @here = Dir.pwd
 @timezone = 'Europe/Brussels'
 @conference = Conference.select_single(:acronym=>ARGV[0])
@@ -41,7 +42,21 @@ class String
     return "'" + self.esc + "'"
   end
   def namify
-    return self.split(/\s+/).map{|x| x.capitalize}.join(' ')
+    r = self.downcase
+    [
+      ['-', /-/],
+      ['.', /\./],
+      [' ', /\s+/]
+    ].each do |sep, re|
+      a = []
+      r.split(re).each do |w|
+        z = ''
+        w.chars.each_with_index{|c,i| c=c.upcase if i==0; z << c}
+        a << z
+      end
+      r = a.join(sep)
+    end
+    return r
   end
   def shortnamify
     bits = self.split(/\s+/)
@@ -51,7 +66,10 @@ class String
     return self.gsub(/\s+(track|devroom)$/i, '')
   end
   def urlify
-    return URI.escape(self.downcase.gsub(/[\.&\?\+\*]/, '').gsub(/\s+/, '_').gsub(/'/, '_')).gsub(/%C3%AB/u, 'e').gsub(/%E4/u, 'a').gsub(/%C3%EA/u, 'a').gsub(/%AB/u, 'e').gsub(/%C3%98/u, 'O').gsub(/%C3%A5/u, 'a').gsub(/%C3%A9/u, 'e').gsub(/%C3%B8/u, 'oe').gsub(/%C5%A1/u, 's').gsub(/%C3%A6/u, 'ae').gsub(/%C3%B6/u, 'oe').gsub(/%C3%A8/u, 'e').gsub(/%C3%BC/u, 'ue').gsub(/%C3%A4/u, 'ae').gsub(/%C3%AA/u, 'e').gsub(/%C3%AC/u, 'i').gsub(/%C3%AD/u, 'i').gsub(/%C3%A7/u, 'c').gsub(/%C3%9F/u, 'ss').gsub(/'/, '').gsub(/%C3%A1/u, 'a').gsub(/%C3%B1/u, 'n').gsub(/%C3%BD/u, 'y').gsub(/%C3%B3/u, 'o')
+    return URI.escape(self.downcase.gsub(/[\.&\?\+\*]/, '').gsub(/\s+/, '_').gsub(/'/, '_')).gsub(/%C3%AB/u, 'e').gsub(/%E4/u, 'a').gsub(/%C3%EA/u, 'a').gsub(/%AB/u, 'e').gsub(/%C3%98/u, 'O').gsub(/%C3%A5/u, 'a').gsub(/%C3%A9/u, 'e').gsub(/%C3%B8/u, 'oe').gsub(/%C5%A1/u, 's').gsub(/%C3%A6/u, 'ae').gsub(/%C3%B6/u, 'oe').gsub(/%C3%A8/u, 'e').gsub(/%C3%BC/u, 'ue').gsub(/%C3%A4/u, 'ae').gsub(/%C3%AA/u, 'e').gsub(/%C3%AC/u, 'i').gsub(/%C3%AD/u, 'i').gsub(/%C3%A7/u, 'c').gsub(/%C3%9F/u, 'ss').gsub(/'/, '').gsub(/%C3%A1/u, 'a').gsub(/%C3%B1/u, 'n').gsub(/%C3%BD/u, 'y').gsub(/%C3%B3/u, 'o').gsub(/%C3%BA/u, 'u')
+  end
+  def nl2br
+    return self.gsub(/\n/, "<br/>\n")
   end
 end
 
@@ -63,6 +81,46 @@ def write_file( filename, content )
   file = File.open( filename , File::CREAT | File::WRONLY | File::TRUNC )
   file.write( content )
   file.close
+end
+
+def sort_event_by_room_affinity(e1, e2)
+  a = []
+  if e1.conference_room_id == e2.conference_room_id
+    a << 1
+  else
+    a << 0
+  end
+  a << e1.start_datetime
+  a << e1.duration
+  return a
+end
+
+def event_is_upcoming_to(e1, e2, limit=15.minutes)
+  (e2.end_datetime .. (e2.end_datetime + limit)).include? e1.start_datetime
+end
+
+def event_next_in_room(e1, e2)
+  e1.conference_room_id == e2.conference_room_id and e1.start_datetime.day == e2.end_datetime.day and e1.start_datetime >= e2.end_datetime
+end
+
+def event_sametime(e1, e2)
+  # discard e2 that starts right after e1, they're picked up by event_is_upcoming_to
+  if e1.start_datetime == e2.end_datetime then
+    return false
+  end
+  if e2.start_datetime <= e1.start_datetime and e2.end_datetime >= e1.start_datetime then
+    # e2 starts before or at the same time as e1
+    # AND
+    # e2 ends after or at the same time as e1
+    return true
+  end
+  if e2.start_datetime >= e1.start_datetime and e2.start_datetime < e1.end_datetime then
+    # e2 starts after e1
+    # AND
+    # e2 ends before e1
+    return true
+  end
+  return false
 end
 
 @speaker_map = {}
@@ -109,7 +167,7 @@ def url_for(url)
   target
 end
 
-@current_language = lang
+@current_language = @lang
 @params = {}
 def local( tag, arguments = {} )
   Localizer.lookup( tag.to_s, @current_language, arguments )
@@ -141,23 +199,27 @@ current_url = {:controller=>'schedule',:action=>:index,:language=>'en',:conferen
 
 @template_prefix = @here + '/' + File.dirname(__FILE__) + '/../app/views/fosdem/'
 
-def rxml(template_filename)
+def rxml(template_filename, wrap_with_div=true)
   f = @template_prefix + template_filename + '.rxml'
   template_content = File.new(f, "r").read
   xml = Builder::XmlMarkup.new(:indent => 2)
   params = @params
-  xml.div(:id=>'schedule') do
+  if wrap_with_div then
+    xml.div(:id=>'schedule') do
+      eval(template_content, binding(), f, 1)
+    end
+  else
     eval(template_content, binding(), f, 1)
   end
 end
 
-def rxmlfile(template_filename, output_filename)
+def rxmlfile(template_filename, output_filename, wrap_with_div=true)
   o = @output_dir + '/' + output_filename
   o += '.html' unless o =~ /\./
   d = File.dirname(o)
   File.makedirs(d) #unless File.directory? d
   puts "Rendering #{o}"
-  buffer = rxml(template_filename)
+  buffer = rxml(template_filename, wrap_with_div)
   out = File.open(o, File::CREAT|File::WRONLY|File::TRUNC)
   out.write(buffer)
   out.close
@@ -183,7 +245,6 @@ def is_devroom_track(t)
   end
 end
 
-
 def is_lightning_talk(t)
   raise "t is nil" if t.nil?
   if (t.is_a? String) then
@@ -193,7 +254,6 @@ def is_lightning_talk(t)
     return is_lightning_talk(t.conference_track)
   end
 end
-
 
 #################################################################################################################
 
@@ -220,7 +280,7 @@ end
 @event_speakers = {}
 @speakers = []
 begin
-  ep = View_event_person.select({:translated=>lang, :conference_id=>@conference.conference_id, :event_role=>'speaker'})
+  ep = View_event_person.select({:translated=>@lang, :conference_id=>@conference.conference_id, :event_role=>'speaker'})
   ep.each do |x|
     @event_person_id_map[x.event_id.to_i] = [] unless @event_person_id_map.has_key? x.event_id
     @event_person_id_map[x.event_id.to_i] << x.person_id.to_i
@@ -250,7 +310,7 @@ end
 @speaker_events = {}
 @main_track_events_by_track = nil
 begin
-  events = View_schedule_event_fosdem.select({:translated=>lang, :conference_id=>@conference.conference_id},{:order=>[:title,:subtitle]})
+  events = View_schedule_event_fosdem.select({:translated=>@lang, :conference_id=>@conference.conference_id},{:order=>[:title,:subtitle]})
   events.each do |e|
     @events << e
     @event_map[e.event_id] = e
@@ -391,7 +451,9 @@ end
 File.open("includes/maps.php", File::CREAT|File::WRONLY|File::TRUNC) do |f|
   f.puts "<?php"
   f.puts '$PENTABARF_EVENT_TITLE_BY_URL = array();'
+  f.puts '$PENTABARF_EVENT_ID_BY_URL    = array();'
   f.puts '$PENTABARF_PERSON_NAME_BY_URL = array();'
+  f.puts '$PENTABARF_PERSON_ID_BY_URL   = array();'
   f.puts '$PENTABARF_TRACK_NAME_BY_URL  = array();'
   f.puts '$PENTABARF_ROOM_NAME_BY_URL   = array();'
   f.puts '$PENTABARF_DAY_NAME_BY_ID     = array();'
@@ -402,10 +464,12 @@ File.open("includes/maps.php", File::CREAT|File::WRONLY|File::TRUNC) do |f|
   @events.each do |e|
     raise "slug is nil for event #{e.title} (#{e.event_id})" if e.slug.nil?
     f.puts "$PENTABARF_EVENT_TITLE_BY_URL[#{e.slug.php}] = #{e.title.php};"
+    f.puts "$PENTABARF_EVENT_ID_BY_URL[#{e.slug.php}] = #{e.event_id};"
   end
   f.puts
   @speakers.each do |s|
     f.puts "$PENTABARF_PERSON_NAME_BY_URL[#{s.name.urlify.php}] = #{s.name.namify.php};"
+    f.puts "$PENTABARF_PERSON_ID_BY_URL[#{s.name.urlify.php}] = #{s.person_id};"
   end
   f.puts
   @tracks.each do |t|
