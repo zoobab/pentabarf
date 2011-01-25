@@ -91,9 +91,10 @@ xml.div(:id=>'event',:class=>'section eventpage') do
    
     end # div: infobox
 
-    #xml.div(:class=>'title') do
-    #  xml.div(@event.title, {:class=>'title-event'})
-    #end
+    xml.div(:class=>'title') do
+      xml.h1(@event.title, {:class=>'title'})
+      xml.h2(@event.subtitle, {:class => 'subtitle'}) if not (@event.subtitle.nil? or @event.subtitle.empty?)
+    end
 
     if @event.abstract != nil and @event.abstract != "" then
       xml.div({:class=>'abstract'}) do
@@ -107,7 +108,7 @@ xml.div(:id=>'event',:class=>'section eventpage') do
     end
 
     links = Event_link.select({:event_id=>@event.event_id})
-    if links.length > 0
+    if not (links.nil? or links.empty?) then
       xml.div(:class=>'links') do
         xml.h2('Links:')
         xml.ul do
