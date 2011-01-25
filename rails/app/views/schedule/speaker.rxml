@@ -4,7 +4,7 @@ xml.div(:id=>'speaker',:class=>'section vcard') do
       xml.tr do xml.th( local( 'schedule::events' ),{:colspan=>2}) end
       @speaker_events.each do | event |
 	# BUG: shows non-public events (View_event_person does not contain public)
-        if Event.select_single(:event_id => 179).public:
+        if Event.select_single(:event_id => event.event_id).public:
           xml.tr do
             xml.td do
               xml.a(:href=>url_for(:conference_id=>@conference.conference_id,:action=>:event,:id=>event.event_id,:language=>params[:language])) do
