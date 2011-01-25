@@ -9,13 +9,8 @@ xml.div(:id=>'speaker',:class=>'section') do
         xml.th(local('schedule::start_time'))
         xml.th(local('schedule::event_duration'))
       end
-      (@speaker_events[@speaker.person_id] or []).each do | event |
+      (@speaker_events[@speaker.person_id] or []).sort_by{|e| e.start_datetime}.each do | event |
         xml.tr do
-          #xml.td do
-          #  xml.a(:href=>url_for(:action=>:event,:id=>event.event_id)) do
-          #    xml.img(:src=>event_image(event.event_id,32))
-          #  end
-          #end
           xml.td do
             xml.a(event.title,{:href=>'../'+url_for(:action=>:event,:slug=>event.slug)})
           end
@@ -43,12 +38,14 @@ xml.div(:id=>'speaker',:class=>'section') do
   end
   if (@speaker.abstract and not @speaker.abstract.empty?) then
     xml.div(:class=>abstract_classes.join(" ")) do
-      xml << markup(@speaker.abstract)
+      xml << markup(@speaker.abstract).nl2br
     end
   end
 
   if (@speaker.description and not @speaker.description.empty?) then
-    xml.div(:class=>:description) do xml << markup(@speaker.description) end
+    xml.div(:class=>:description) do
+      xml << markup(@speaker.description).nl2br
+    end
   end
 
   if false #@speaker.conference_person_id
