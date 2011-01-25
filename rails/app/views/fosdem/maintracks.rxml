@@ -1,0 +1,74 @@
+xml.div(:id=>'maintracks-index',:class=>'section event-index') do
+  xml.table(:class=>'event-index') do
+    xml.thead do
+      xml.tr do
+        xml.th('Event',{:class=>'event'})
+        xml.th('Speakers',{:class=>'speaker',:colspan=>2})
+        xml.th('Room',{:class=>'room'})
+        xml.th('When',{:class=>'start-time'})
+        #xml.th('Media',{:class=>'start-time'})
+      end
+    end
+
+    c = 0
+    @events.select {|e| is_main_track(e)}.sort_by {|e| [e.conference_day, e.start_time]}.group_by {|e| e.conference_track}.each do |track,events|
+      xml.tr(:class=>"separator") do
+        xml.td(:colspan=>6)
+      end
+      xml.tbody do
+        xml.tr(:class=>"track-title") do
+          xml.td(:colspan=>6, :class=>"track-title track-#{track.urlify}") do
+            xml.a(track,{:href=>url_for(:action=>:track,:track=>track)})
+          end
+        end
+        c = 0
+
+        events.each do |event|
+          trclass = (c%2 == 0) ? "even" : "odd"
+          c += 1
+
+          xml.tr(:class=>trclass) do
+            xml.td(:class=>"event") do
+              xml.p(:class=>'title') do
+                xml.a(event.title,{:href=>url_for(:action=>:event,:slug=>event.slug)})
+              end
+            end
+            xml.td(:class=>"speakers speakers-photo") do
+              @event_speakers[event.event_id].each do |speaker|
+                xml.a(:href=>url_for(:action=>:speaker,:name=>speaker.name)) do
+                  xml.img(:class=>'speaker-image',:src=>speaker_image(speaker.person_id, 22)) if speaker_has_image(speaker.person_id)
+                end
+                xml.br
+              end
+            end
+            xml.td(:class=>"speakers") do
+              @event_speakers[event.event_id].each do |speaker|
+                xml.a(speaker.name,{:href=>url_for(:action=>:speaker,:name=>speaker.name)})
+                xml.br
+              end
+            end
+            xml.td(:class=>"event room") do
+              if event.conference_room.nil? then
+                xml << "n/a"
+              else
+                xml.a(event.conference_room,{:href=>url_for(:action=>:room,:room=>event.conference_room)})
+              end
+            end
+            xml.td(:class=>"event day start-time event-timespec") do
+              daydate = event.conference_day
+              xml.a(daydate.strftime('%a'),{:href=>url_for(:action=>:day,:id=>daydate.strftime('%A').downcase)})
+              xml << "          &nbsp;#{event.start_time.strftime('%H:%M')}&nbsp;&rarr;&nbsp;#{(event.start_time + event.duration).strftime('%H:%M')}"
+            end
+            #xml.td(:class=>"event-media") do
+            #  Momomoto::View_event_media.find({:event_id => event.event_id}).each_unique(:event_media_id) do | m |
+            #    xml.a({:href=>m.event_media_url, :title=>m.label, :class=>"event-media-icon"}) do
+            #      xml.img(:src=>m.event_media_icon_url)
+            #     end
+            #   end
+            #end
+          end
+        end
+      end
+    end
+  end # table
+end # div

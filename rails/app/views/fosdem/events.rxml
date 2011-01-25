@@ -1,0 +1,68 @@
+xml.div(:id=>'event-index',:class=>'section') do
+  xml.table(:class=>'event-index') do
+    xml.thead do
+      xml.tr do
+        xml.th(local('schedule::event'),{:class=>'event'})
+        xml.th(local('schedule::speakers'),{:class=>'speaker'})
+        xml.th(local('schedule::room'),{:class=>'room'})
+        xml.th(local('schedule::day'),{:class=>'day'})
+        xml.th(local('schedule::start_time'),{:class=>'start-time'})
+        xml.th('end time',{:class=>'end-time'})
+        xml.th(local('schedule::event_duration'),{:class=>'event-duration'})
+      end
+    end
+    xml.tbody do
+      first = true
+      @events.group_by {|e| e.conference_track_id}.sort_by{|t,e| track_sort_base(@track_map[t])}.each do |track_id, events|
+        track = @track_map[track_id]
+        if not first then
+          xml.tr(:class=>"separator track-#{track.conference_track.urlify}") do
+            xml.td(:colspan=>8)
+          end
+        end
+        first = false
+
+        xml.tr(:class=>"track-title track-#{track.conference_track.urlify}") do
+          xml.td(:colspan=>8, :class=>"track-title") do
+            xml.a(track.conference_track,{:href=>url_for(:action=>:track,:track=>track.conference_track)})
+          end
+        end
+
+        events.sort_by {|e| e.start_datetime}.each do |event|
+          xml.tr do
+            xml.td(:class=>"event track-#{track.conference_track.urlify}") do
+              xml.p(:class=>'event-title') do
+                xml.a(event.title,{:href=>url_for(:action=>:event,:slug=>event.slug)})
+              end
+            end
+            xml.td(:class=>"speakers") do
+              (@event_speakers[event.event_id] or []).uniq.each do |speaker|
+                xml.a(speaker.name,{:href=>url_for(:action=>:speaker,:name=>speaker.name)})
+                xml.br
+              end
+            end
+            xml.td(:class=>"event room") do
+              xml.a(event.conference_room,{:href=>url_for(:action=>:room,:room=>event.conference_room)})
+            end
+            xml.td(:class=>"event day") do
+              xml.a(event.start_datetime.strftime('%a'),{:href=>url_for(:action=>:day,:id=>event.start_datetime.strftime('%A').downcase)})
+            end
+            xml.td(:class=>"event start-time") do
+              xml.text! event.start_time.strftime('%H:%M')
+            end
+            xml.td(:class=>"event end-time") do
+              xml.text!((event.start_time + event.duration).strftime('%H:%M'))
+            end
+            xml.td(:class=>"event event-duration") do
+              xml.text! event.duration.strftime('%H:%M')
+            end
+          end #tr
+        end #events
+
+        xml.tr(:class=>"separator track-#{track.conference_track.urlify}") do
+          xml.td(:colspan=>8)
+        end
+      end #group_by
+    end
+  end
+end

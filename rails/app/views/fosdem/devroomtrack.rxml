@@ -1,0 +1,78 @@
+xml = Builder::XmlMarkup.new(:indent=>1)
+xml.div(:id=>'track',:class=>'section') do
+  xml.table(:class=>'track-index') do
+    xml.thead do
+      xml.tr do
+        xml.th('When', {:class=>'event-time'})
+		  xml.th('<[schedule::room]>', {:class=>'room'}) if @track_is_multiroom
+        xml.th('<[schedule::event]>',{:class=>'event'})
+        xml.th('<[schedule::speaker]>',{:class=>'speaker'})
+        xml.th('Media',{:class=>'event-media'})
+      end
+    end
+
+    current_day = -1
+
+    xml.tbody do
+      c = 0
+      @events.each_unique(:event_id) do | event |
+        #next unless event.event_state_tag != nil and event.event_state_tag == "accepted"
+
+        if event.day != current_day then
+          xml.tr do
+            if event.day.nil? then
+              xml.td("Unscheduled", {:class=>'schedule-day', :colspan=>3})
+            else
+              daydate = @conference.start_date + (event.day - 1)
+              xml.td(daydate.strftime('%A %F'), {:class=>'schedule-day', :colspan=>3})
+            end
+          end
+
+          current_day = event.day
+          c = 0
+        end
+
+        c += 1
+        c %= 2
+        trclass = c == 1 ? "even" : "odd"
+        xml.tr(:class=>trclass) do
+          xml.td(:class=>"event-timespec") do
+            if not event.day.nil? then
+              daydate = @conference.start_date + (event.day - 1)
+              xml.a("#{daydate.strftime('%a')}", {:href=>url_for(:action=>:day,:id=>daydate.strftime('%a').downcase)})
+				  xml << "&nbsp;#{event.real_starttime.strftime('%H:%M')}-#{event.end_time.strftime('%H:%M')}"
+            else
+              xml << "<i>n/a</i>"
+            end
+			 end
+			 if @track_is_multiroom then
+				 xml.td(:class=>"event room") do
+					 xml.a(event.room,{:href=>url_for(:action=>:room,:id=>sanitize_room_name(event.room))})
+				 end
+			 end
+          xml.td(:class=>"event") do
+            xml.a(event.title,{:href=>url_for(:action=>:event,:id=>event.event_id)})
+          end
+          speakerlist = []
+          speakers = Momomoto::View_schedule_event_all.find({:conference_id=>@conference.conference_id,
+                                                             :translated_id=>@language.language_id,
+                                                             :event_id=>event.event_id},
+                                                             nil, 'lower(title),lower(subtitle)' )
+          speakers.each_unique(:name) do | speaker |
+            speakerlist << "<a href=\"#{url_for(:action=>:speaker,:id=>sanitize_speaker_name(speaker.name))}\">#{speaker.name}</a>"
+          end
+          xml.td(:class=>"speaker devroomtrack-speaker") do
+            xml << speakerlist.join(", ")
+          end
+          xml.td(:class=>"event-media") do
+            Momomoto::View_event_media.find({:event_id => event.event_id}).each_unique(:event_media_id) do | m |
+              xml.a({:href=>m.event_media_url, :title=>m.label, :class=>"event-media-icon"}) do
+                xml.img(:src=>m.event_media_icon_url)
+              end
+            end
+          end
+        end
+      end
+    end
+  end
+end

@@ -1,0 +1,182 @@
+roomranges = []
+grid_rooms = @rooms.select{|r| @room_events.has_key?(r.conference_room_id) and not @room_events[r.conference_room_id].empty?}.sort_by{|r| r.rank}
+(grid_rooms.length.to_f / @grid_max_columns).ceil.times { | t | roomranges << (t * @grid_max_columns .. ((t + 1) * @grid_max_columns) - 1) }
+tdwidth = 100.0 / @grid_max_columns
+max_title = @grid_max_title_length
+grid_events = @events.sort_by{|e| e.start_datetime}
+
+if not @day.nil? then
+  # filter
+  if @day.is_a? Integer then
+    confdays = [ grid_events.map{|e| e.start_datetime.to_date}.min + (@day - 1) ]
+  elsif @day.is_a? String then
+    wday = Date.parse(@day).wday
+    confdays = grid_events.map{|e| e.start_datetime.to_date}.select{|d| d.wday == wday}.uniq.sort
+  else
+    confdays = [@day]
+  end
+else
+  confdays = grid_events.map{|e| e.start_datetime.to_date}.uniq.sort
+end
+
+day_header = confdays.size > 1
+
+xml.div(:id=>'schedule-grid',:class=>'section') do
+  big_table = schedule_table(@conference, grid_events)
+
+  xml.table do
+    xml.tbody do
+      d = 0
+      confdays.each do | day |
+        d += 1
+        table = big_table[day.to_s]
+        raise "no #{day} in big_table" if table.nil?
+
+        if day_header then
+          if (d > 1) then
+            xml.tr(:class=>'separator') do
+              xml.td('', {:colspan=>@grid_max_columns + 1})
+            end
+          end
+          xml.tr(:class=>'schedule-day') do
+            xml.td(day.strftime('%A %F'), {:colspan=>@grid_max_columns + 1})
+          end
+        end
+
+        i = 0
+        roomranges.each do | roomrange |
+          xml.tr() do
+            xml.th(:class=>'time')
+            i = 0
+            r = @grid_max_columns
+            grid_rooms.each do | room |
+              if roomrange.member?(i) then
+                r -= 1
+                xml.th(:class=>'room', :width=>"#{tdwidth}%") do
+                  xml.a(room.conference_room, {:href=>@urlprefix+url_for(:action=>:room, :room=>room.conference_room)})
+                end
+              end
+              i += 1
+            end
+            if r > 0 then
+              (1 .. r).each do
+                xml.th(:class=>'room', :width=>"#{tdwidth}%") do
+                  xml << "&nbsp;"
+                end
+              end
+            end
+          end
+
+          rowpos = 0
+          rowindex = -1
+          c = 0
+          table.each do | row |
+            rowpos += 1
+            rowindex += 1
+            c += 1
+            c %= 2
+
+            trclass = (c == 0) ? "odd" : "even"
+            trclass += " hour" if (rowpos > 1 && row[0][3..5] == "00")
+            xml.tr(:class => trclass) do
+              xml.td(row[0],{:class=>"time"})
+
+              j = 0
+              r = @grid_max_columns
+
+              grid_rooms.each do | room |
+                j += 1
+                r -= 1 if ((row[room.conference_room_id] == 0 or (row[room.conference_room_id] != nil and row[room.conference_room_id][:ltskip])) and roomrange.member?(j - 1))
+                next if (row[room.conference_room_id] == 0) or (row[room.conference_room_id] != nil and row[room.conference_room_id][:ltskip])
+
+                if roomrange.member?(j - 1) then
+                  r -= 1
+                  if row[room.conference_room_id].nil?
+                    xml.td(:class=>'room empty') do
+                      xml << "&nbsp;"
+                    end
+                  else
+                    event = @event_map[row[room.conference_room_id][:event_id]]
+                    slots = row[room.conference_room_id][:slots]
+
+                    tdclass = "room event"
+                    cellid = "event-#{event.event_id}"
+
+                    speakers = (@event_speakers[event.event_id] or []).map{|x| '<a href="'+@urlprefix+url_for(:action=>:speaker,:name=>x.name)+'">'+x.name.shortnamify+'</a>'}.join(" ")
+
+                    title = event.title
+                    track_tag = event.conference_track.urlify
+                    track = event.conference_track
+                    link = @urlprefix+url_for(:action=>:event,:slug=>event.slug)
+                    detail = nil
+                    timespec = "#{event.start_time.strftime('%H:%M')}-#{(event.start_time + event.duration).strftime('%H:%M')}"
+
+                    trackdisp = track.shorttrack
+                    if trackdisp.length > max_title then
+                      trackdisp = trackdisp[0, max_title] + "…"
+                    end
+
+                    tdclass += " track-#{track_tag}"
+
+                    if title.length > max_title then
+                      longtitle = title
+                      if timespec then
+                        title += "\n" + timespec
+                      end
+                      title = title[0, max_title] + "…"
+                    else
+                      if timespec then
+                        longtitle = timespec
+                      else
+                        longtitle = nil
+                      end
+                    end
+
+                    xml.td({:rowspan=>slots,
+                             :class=>tdclass,
+                             :id=>cellid}) do
+                      xml.p() do
+                        if longtitle then
+                          xml.a(title, {:href=>link, :title=>longtitle})
+                        else
+                          xml.a(title, {:href=>link})
+                        end
+                      end
+                      if speakers or detail then
+                        xml.p(:class=>'info') do
+                          if speakers then
+                            xml << speakers
+                          end
+                          if detail then
+                            xml.div({:class=>"event-grid-detail"}) do
+                              xml << detail.join("<br />")
+                            end
+                          end # detail
+                          xml.a(:href=>@urlprefix+url_for({:action=>:track,:track=>track}),:class=>'trackref') do
+                            xml.span(trackdisp, {:class=>'track'})
+                          end
+                        end # p
+                      end # if speaker or detail
+                    end #td
+                  end #if
+                end #if in range
+
+              end #rooms
+
+              if r > 0 then
+                  (1 .. r).each do
+                  xml.td(:class=>'room empty', :width=>"#{tdwidth}%") do
+                    xml << "&nbsp;"
+                  end
+                end
+              end
+              
+            end #tr
+          end #table->row
+
+        end #roomrage
+
+      end #conference.days
+    end #tbody
+  end #table
+end

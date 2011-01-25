@@ -1,0 +1,77 @@
+xml = Builder::XmlMarkup.new(:indent=>1)
+xml.div(:id=>'event-index',:class=>'section') do
+  xml.table(:class=>'event-index') do
+    xml.thead do
+      xml.tr do
+        xml.th('<[schedule::event]>',{:class=>'event'})
+        xml.th('<[schedule::speakers]>',{:class=>'speaker'})
+        xml.th('<[schedule::room]>',{:class=>'room'})
+        xml.th('<[schedule::day]>',{:class=>'day'})
+        xml.th('<[schedule::start_time]>',{:class=>'start-time'})
+        xml.th('end time',{:class=>'end-time'})
+        xml.th('<[schedule::event_duration]>',{:class=>'event-duration'})
+      end
+    end
+    xml.tbody do
+      current_track_id = nil
+      current_track_tag = nil
+      @events_by_track.each_unique(:event_id) do | event |
+        next if event.conference_track_type > 1;
+
+        if (current_track_id != event.conference_track_id) then
+          if (current_track_id != nil) then
+            xml.tr(:class=>"separator #{sanitize_track(current_track_tag)}") do
+              xml.td(:colspan=>8)
+            end
+          end
+          current_track_id = event.conference_track_id
+          current_track_tag = event.conference_track_tag
+          xml.tr(:class=>"track-title #{sanitize_track(event.conference_track_tag)}") do
+            xml.td(:colspan=>8, :class=>"track-title") do
+              xml.a(event.conference_track,{:href=>url_for(:action=>:track,:id=>sanitize_track_id(event.conference_track_tag))})
+            end
+          end
+        end
+        xml.tr() do
+          xml.td(:class=>"event #{sanitize_track(event.conference_track_tag)}") do
+            xml.p(:class=>'title') do
+              xml.a(event.title,{:href=>url_for(:action=>:event,:id=>event.event_id)})
+            end
+            #xml.p(:class=>'subtitle') do
+            #  xml.a(event.subtitle,{:href=>url_for(:action=>:event,:id=>event.event_id)})
+            #end
+          end
+          xml.td(:class=>"speakers") do
+            @events_by_track.each_by_value({:event_id=>event.event_id}) do | speaker |
+              xml.a(speaker.name,{:href=>url_for(:action=>:speaker,:id=>sanitize_speaker_name(speaker.name))})
+              xml.br
+            end
+          end
+          if event.room != nil and event.room != "" and event.real_starttime != nil and event.real_starttime != "" then
+            xml.td(:class=>"event room") do
+              xml.a(event.room,{:href=>url_for(:action=>:room,:id=>sanitize_room_name(event.room))})
+            end
+            xml.td(:class=>"event day") do
+              @daydate = @conference.start_date + (event.day - 1)
+              xml.a(@daydate.strftime('%a'),{:href=>url_for(:action=>:day,:id=>@daydate.strftime('%A').downcase)})
+            end
+            xml.td(:class=>"event start-time") do
+              xml.text! event.real_starttime.strftime('%H:%M')
+            end
+            xml.td(:class=>"event end-time") do
+              xml.text! event.end_time.strftime('%H:%M')
+            end
+            xml.td(:class=>"event event-duration") do
+              xml.text! event.duration.strftime('%H:%M')
+            end
+          else
+            xml.td("not scheduled yet", {:colspan=>5})
+          end
+        end
+      end
+      xml.tr(:class=>"separator #{sanitize_track(current_track_tag)}") do
+        xml.td(:colspan=>8)
+      end
+    end
+  end
+end

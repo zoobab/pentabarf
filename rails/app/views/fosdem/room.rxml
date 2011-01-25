@@ -1,0 +1,52 @@
+xml.div(:id=>'room',:class=>'section') do
+  #xml.h1(@room.name)
+  if (@room.size) then
+    xml.h2("Capacity: #{@room.size.to_s} seats")
+  end
+  xml.table(:class=>'room-index') do
+    xml.tbody do
+      d = 0
+      @events.select {|e| (not e.start_datetime.nil?) and (not e.conference_room_id.nil?) and (e.conference_room_id == @room.conference_room_id)}.group_by {|e| e.start_datetime.to_date}.sort_by {|d,e| d}.each do |day,events|
+        c = 0
+
+        if d > 0 then
+          xml.tr(:class=>'separator') do
+            xml.td('')
+          end
+        end
+        d += 1
+
+        xml.tr({:class=>'schedule-day'}) do
+          xml.td(day.strftime('%A %F'), {:class=>'schedule-day-title', :colspan=>4})
+          xml.tr() do
+            xml.th('When', {:class=>'event-time'})
+            xml.th(local('schedule::conference_track'),{:class=>'track'})
+            xml.th(local('schedule::event'),{:class=>'event'})
+            xml.th(local('schedule::speaker'),{:class=>'speaker'})
+          end
+        end #tr
+
+        events.sort_by {|e| e.start_time}.each do |event|
+          c += 1
+          trclass = (c % 2 == 0) ? "even" : "odd"
+          xml.tr(:class=>@trclass) do
+            xml.td(:class=>"event-time") do
+              xml.text! event.start_time.strftime('%H:%M') + "-" + (event.start_time + event.duration).strftime('%H:%M')
+            end
+            xml.td(:class=>"track track-#{event.conference_track.urlify}") do
+              xml.a(event.conference_track, {:href=>"../"+url_for(:action=>:track, :track=>event.conference_track)})
+            end
+            xml.td(:class=>"event") do
+              xml.a(event.title, {:href=>"../"+url_for(:action=>:event, :slug=>event.slug)})
+            end
+            xml.td(:class=>"speaker") do
+              (@event_speakers[event.event_id] or []).each do |speaker|
+                xml.a(speaker.name, {:href=>"../"+url_for(:action=>:speaker, :name=>speaker.name)})
+              end
+            end
+          end #tr
+        end #events
+      end #@events
+    end #tbody
+  end #table
+end #div

@@ -1,0 +1,36 @@
+i = 0
+
+xml.div(:id=>'allspeakers',:class=>'section') do
+  xml.table(:class=>'allspeakers') do
+  
+    xml.tbody do
+      c = -1
+      opened = false
+      @speakers.sort_by {|s| s.name.namify}.each do | person |
+        next if person.name == "FOSDEM"
+        i += 1
+        c += 1
+        if c >= @speakers_per_row then
+          xml << '</tr>'
+          c = 0
+        end
+        if c == 0 then
+          xml << '<tr>'
+        end
+        xml.td(:class=>'speaker speaker-index-info') do
+          xml.a("#{person.name.namify}",{:href=>url_for(:action=>:speaker,:name=>person.name), :class=>'speaker-name'})
+        end
+      end
+      c += 1
+      while (c < @speakers_per_row) do
+        xml.td(:class=>'speaker speaker-index-info')
+        c += 1
+      end
+      xml << '</tr>'
+    end #tbody
+
+  end #table
+  xml.p() do
+	 xml << "Total number of speakers: " + i.to_s
+  end
+end

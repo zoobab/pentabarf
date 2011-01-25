@@ -1,0 +1,70 @@
+xml.div(:id=>'speaker',:class=>'section') do
+  xml.div(:id=>'infobox') do
+    xml.table do
+      xml.tr do
+        xml.th(local('schedule::event'))
+        xml.th(local('schedule::conference_track'))
+        xml.th(local('schedule::day'))
+        xml.th(local('schedule::room'))
+        xml.th(local('schedule::start_time'))
+        xml.th(local('schedule::event_duration'))
+      end
+      (@speaker_events[@speaker.person_id] or []).each do | event |
+        xml.tr do
+          #xml.td do
+          #  xml.a(:href=>url_for(:action=>:event,:id=>event.event_id)) do
+          #    xml.img(:src=>event_image(event.event_id,32))
+          #  end
+          #end
+          xml.td do
+            xml.a(event.title,{:href=>'../'+url_for(:action=>:event,:slug=>event.slug)})
+          end
+          xml.td(:class=>"track-#{event.conference_track.urlify}") do
+            xml.a(event.conference_track, {:href=>'../'+url_for(:action=>:track,:track=>event.conference_track)})
+          end
+          xml.td do
+            xml.a(event.start_datetime.strftime('%A'), {:href=>'../'+url_for(:action=>:day,:id=>event.start_datetime.strftime('%a').downcase)})
+          end
+          xml.td do
+            xml.a(event.conference_room, {:href=>'../'+url_for(:action=>:room,:room=>event.conference_room)})
+          end
+          xml.td(event.start_time.strftime('%H:%M'))
+          xml.td(event.duration.strftime('%H:%M'))
+        end
+      end
+    end
+  end
+
+  #xml.h1 @speaker.name
+  abstract_classes = ['abstract']
+  if speaker_has_image(@speaker.person_id) then
+    xml.img(:class=>'speaker-image',:src=>"../"+speaker_image(@speaker.person_id, 128))
+    abstract_classes << 'abstract-image'
+  end
+  if (@speaker.abstract and not @speaker.abstract.empty?) then
+    xml.div(:class=>abstract_classes.join(" ")) do
+      xml << markup(@speaker.abstract)
+    end
+  end
+
+  if (@speaker.description and not @speaker.description.empty?) then
+    xml.div(:class=>:description) do xml << markup(@speaker.description) end
+  end
+
+  if false #@speaker.conference_person_id
+    links = Conference_person_link.select({:conference_person_id=>@speaker.conference_person_id})
+    if links.length > 0
+      xml.div(:class=>'links') do
+        xml.h2 local('schedule::links')
+        xml.ul do
+          links.each do | link |
+            xml.li do
+              xml.a( link.title ? link.title : link.url, {:href=>link.url})
+            end
+          end
+        end
+      end
+    end
+  end
+
+end

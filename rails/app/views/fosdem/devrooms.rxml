@@ -1,0 +1,39 @@
+xml.div(:id=>'track-index',:class=>'section') do
+
+  xml.p("In alphabetical order:")
+
+  xml.table() do
+    xml.thead do
+      xml.th("track", {:colspan => 2})
+      xml.th("rooms(capacity)")
+    end
+    c = 0
+    xml.tbody do
+      @devroom_tracks.sort_by {|t| t.conference_track}.each do | track |
+        c += 1
+        trclass = (c%2 == 0) ? "even" : "odd"
+
+        xml.tr(:class => trclass) do
+          xml.td({:class => "track-#{track.conference_track.urlify}"}) do
+            xml << " "
+          end
+          xml.td() do
+            xml.a(track.conference_track,{:href=>url_for(:action=>:track, :track=>track.conference_track)})
+          end
+
+          first = true
+          xml.td do
+            devroom_rooms = (@track_rooms[track.conference_track_id] or []).sort_by {|r| -r.size}.each do |r|
+              if not first then
+                xml << ", "
+              end
+              xml.a("#{r.conference_room} (#{r.size})",{:href=>url_for(:action=>:room, :room=>r.conference_room)})
+              first = false
+            end
+          end
+        end
+      end
+    end
+  end
+
+end

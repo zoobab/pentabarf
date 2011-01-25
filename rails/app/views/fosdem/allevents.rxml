@@ -1,0 +1,45 @@
+xml = Builder::XmlMarkup.new(:indent=>1)
+@events_per_row = 3
+i = 0
+
+xml.div(:id=>'allevents',:class=>'section') do
+  xml.table(:class=>'allevents') do
+  
+    xml.tbody do
+      c = -1
+      opened = false
+      @events.each_unique(:event_id) do | event |
+        i += 1
+        c += 1
+        if c >= @events_per_row then
+          xml << '</tr>'
+          c = 0
+        end
+        if c == 0 then
+          xml << '<tr>'
+        end
+		  trackclass = "track-#{sanitize_track_id(event.conference_track_tag)}"
+		  event_url = url_for(:action=>:event, :id=>event.event_id)
+		  track_url = url_for(:action=>:track, :id=>sanitize_track_id(event.conference_track_tag))
+		  room_url = url_for(:action=>:room, :id=>sanitize_room_name(event.room))
+        xml.td(:class=>'event') do
+          #xml.span({:class=>trackclass}) do
+			 #	 xml << "&nbsp;&nbsp;"
+			 #end
+          xml.a("#{event.title}",{:href=>url_for(:action=>:event,:id=>event.event_id),:class=>"event-title"})
+			 xml << "<br/>(<a href=\"#{track_url}\" class=\"#{trackclass}\">#{event.conference_track}</a>, <a href=\"#{room_url}\">#{event.room}</a>)"
+        end
+      end
+      c += 1
+      while (c < @events_per_row) do
+        xml.td(:class=>'event')
+        c += 1
+      end
+      xml << '</tr>'
+    end #tbody
+
+  end #table
+  xml.p() do
+	 xml << "Total number of sessions: " + i.to_s
+  end
+end

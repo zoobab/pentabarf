@@ -1,0 +1,52 @@
+map = {
+  0 => [ "Main Tracks", { :le => 1 }, '/schedule/events' ],
+  1 => [ "Side Tracks", { :ge => 3 } ],
+  2 => [ "Developer Rooms", { :eq => 2 }, '/schedule/devrooms' ],
+}
+
+xml = Builder::XmlMarkup.new(:indent=>1)
+xml.div(:id=>'track-index',:class=>'section') do
+
+  xml.table(:class=>'track-index') do
+    map.sort.each do | key, value |
+      title = value[0]
+      criterion = value[1]
+      link = value[2]
+
+      xml.tbody do
+        xml.th({:colspan=>2}) do
+          xml.h1() do
+            if link then
+              xml.a(title, {:href=>link})
+            else
+              xml << title
+            end
+          end
+        end
+      end
+
+      trackrows = Momomoto::Conference_track.find({:conference_id=>@conference.conference_id, :conference_track_type=>criterion}, nil, 'rank')
+
+      c = 0
+      xml.tbody do
+        trackrows.each_unique(:conference_track_id) do | track |
+          c += 1
+          c = 0 if c >= 2
+          trclass = "odd"
+          trclass = "even" if c==1
+
+          xml.tr(:class => trclass) do
+            xml.td(:class=>"event #{sanitize_track(track.tag)}") do
+              xml << "&nbsp;"
+            end
+            xml.td(:class=>"event track-name") do
+              xml.a(track.tag,{:href=>url_for(:action=>:track, :id=>sanitize_track_id(track.tag))})
+            end
+          end
+        end
+      end # tbody
+    end # table
+
+  end # map
+
+end

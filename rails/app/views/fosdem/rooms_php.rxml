@@ -1,0 +1,35 @@
+@rooms.each_unique(:room_id) do | room |
+  
+end
+
+xml = Builder::XmlMarkup.new(:indent=>1)
+xml.div(:id=>'room-index',:class=>'section') do
+  xml.table(:class=>'track-index') do
+    xml.thead do
+      xml.tr do
+        xml.th('<[schedule::room]>',{:class=>'room'})
+        xml.th('Seats')
+      end
+    end
+    xml.tbody do
+      @c = 0
+      @rooms.each_unique(:room_id) do | room |
+        @c = @c + 1
+        if (@c >= 2) then
+          @c = 0
+        end
+        if (@c == 1) then
+          @trclass = "even"
+        else
+          @trclass = "odd"
+        end
+        xml.tr(:class=>@trclass) do
+          xml.td() do
+            xml.a(room.name,{:href=>url_for(:action=>:room, :id=>room.room_id)})
+          end
+          xml.td(room.size)
+        end
+      end
+    end
+  end
+end

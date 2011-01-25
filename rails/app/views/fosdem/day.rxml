@@ -1,0 +1,192 @@
+require 'time'
+
+roomranges = []
+(@grid_rooms.length.to_f / @grid_max_columns).ceil.times { | t | roomranges << (t * @grid_max_columns .. ((t + 1) * @grid_max_columns) - 1) }
+tdwidth = 100.0 / @grid_max_columns
+max_title = @grid_max_title_length
+
+xml.div(:id=>'schedule-grid',:class=>'section') do
+  table = schedule_table( @conference, @grid_events )[@day - 1]
+  xml.table do
+    xml.tbody do
+      i = 0
+      roomranges.each do | roomrange |
+        xml.tr() do
+          xml.th(:class=>'time')
+          i = 0
+          r = @grid_max_columns
+          @grid_rooms.each do | room |
+            if roomrange.member?(i) then
+              r -= 1
+              xml.th(:class=>'room', :width=>"#{tdwidth}%") do
+                xml.a(room.name, {:href=>url_for(:action=>:room, :id=>sanitize_room_name(room.name))})
+              end
+            end
+            i += 1
+          end
+          if r > 0 then
+            (1 .. r).each do
+              xml.th(:class=>'room', :width=>"#{tdwidth}%") do
+                xml << "&nbsp;"
+              end
+            end
+          end
+        end
+
+        rowpos = 0
+        rowindex = -1
+        c = 0
+        table.each do | row |
+          rowindex += 1
+          next unless (@timerange == nil or @timerange.member?(Time.parse(row[0])))
+
+          rowpos += 1
+          c += 1
+          c %= 2
+
+          trclass = (c == 0) ? "odd" : "even"
+          trclass += " hour" if rowpos > 1 && row[0][3..5] == "00"
+          xml.tr(:class=>trclass) do
+            xml.td(row[0],{:class=>"time"})
+
+            j = 0
+            r = @grid_max_columns
+
+            @grid_rooms.each do | room |
+              j += 1
+              r -= 1 if ((row[room.room_id] == 0 or (row[room.room_id] and row[room.room_id][:ltskip])) and roomrange.member?(j - 1))
+              next if row[room.room_id] == 0
+              r += 1 if row[room.room_id] and row[room.room_id][:ltskip]
+              next if row[room.room_id] and row[room.room_id][:ltskip]
+
+              if roomrange.member?(j - 1) then
+                r -= 1
+                if row[room.room_id].nil?
+                  xml.td({:class=>'room empty'}) do
+                    xml << "&nbsp;"
+                  end
+                else
+                  @grid_events.find_by_value({:event_id => row[room.room_id][:event_id] })
+
+                  slots = row[room.room_id][:slots]
+                  unfinished = false
+                  if (@timerange != nil) then
+                    (1 .. slots - 1).each do | s |
+                      if ((table[rowindex + s] == nil) or !(@timerange.member?(Time.parse(table[rowindex + s][0])))) then
+                        slots -= 1 
+                        unfinished = true
+                      end
+                    end
+                  end
+
+                  tdclass = "room event"
+                  cellid = "event-#{@grid_events.event_id}"
+
+                  if row[room.room_id][:lt] then
+                    @tracks.find({:conference_id=>@conference.conference_id, :conference_track_id => @grid_events.conference_track_id})
+                    title = @tracks.name
+                    track_tag = @tracks.tag
+                    track = nil
+                    link = url_for(:action=>:track, :id=>sanitize_track_id(track_tag))
+                    tdclass += " event-track-placeholder"
+                    speaker = nil
+                    
+                    detail = []
+                    (0 .. slots - 1).each do | s |
+                      if table[rowindex + s] and table[rowindex + s][room.room_id] then
+                        event_id = table[rowindex + s][room.room_id][:event_id]
+                        if event_id and event_id != 0then
+                          event_cursor = Momomoto::View_schedule_event_all.find({:conference_id=>@conference.conference_id, :event_id=>event_id})
+                          event_title = event_cursor.title
+                          event_title = event_title[0,17] + "&#133;" if event_title.length > 18
+                            event_start = event_cursor.real_starttime.strftime('%H:%M')
+                            case event_start[3..5]
+                              when "00" then event_real_start = event_start
+                              when "15" then event_real_start = event_start[0..2] + "20"
+                              when "30" then event_real_start = event_start[0..2] + "40"
+                            end
+                            case event_start[3..5]
+                              when "00" then event_real_end = event_start[0..2] + "15"
+                              when "15" then event_real_end = event_start[0..2] + "35"
+                              when "30" then event_real_end = event_start[0..2] + "55"
+                            end
+
+                            detail << "<a href=\"#{url_for(:action=>:event,:id=>event_id)}\" title=\"#{event_real_start}-#{event_real_end} #{event_cursor.name}: #{event_cursor.title}\">#{event_title}</a>"
+                        end
+                      end
+                    end
+                    timespec = nil
+                  else
+                    title = @grid_events.title
+                    track_tag = @grid_events.conference_track_tag
+                    track = @grid_events.conference_track
+                    link = url_for(:action=>:event,:id=>@grid_events.event_id)
+                    speaker = @grid_events.name
+                    detail = nil
+                    timespec = "#{@grid_events.real_starttime.strftime('%H:%M')}-#{@grid_events.end_time.strftime('%H:%M')}"
+                  end
+
+                  tdclass += " #{sanitize_track(track_tag)}"
+                  tdclass += " unfinished" if unfinished
+
+						if title.length > max_title then
+							longtitle = title
+							if timespec then
+								title += "\n" + timespec
+							end
+							title = title[0, max_title] + "…"
+						else
+						   if timespec then
+								longtitle = timespec
+							else
+								longtitle = nil
+							end
+						end
+
+                  xml.td({:rowspan=>slots,
+                           :class=>tdclass,
+                           :id=>cellid}) do
+                    xml.p() do
+                      if longtitle then
+                        xml.a(title, {:href=>link, :title=>longtitle})
+                      else
+                        xml.a(title, {:href=>link})
+                      end
+                    end
+                    if speaker or track or detail then
+                      xml.p(:class=>'info') do
+                        if speaker then
+                          xml.a(speaker, :href=>url_for({:action=>:speaker,:id=>sanitize_speaker_name(speaker)}))
+                        end # speaker
+                        if track then
+                          xml.a(:href=>url_for({:action=>:track,:id=>sanitize_track_id(track_tag)}),
+                                :class=>'trackref') do
+                            xml.span(track, {:class=>'track'})
+                          end
+                        end # track
+                        if detail then
+                          xml.div({:class=>"event-grid-detail"}) do
+                            xml << detail.join("<br />")
+                          end
+                        end # detail
+                      end # p
+                    end # if speaker or track
+                  end #td
+                end #if
+              end #if in range
+            end #rooms
+
+            if r > 0 then
+              (1 .. r).each do
+                xml.td(:class=>'room empty', :width=>"#{tdwidth}%") do
+                  xml << "&nbsp;"
+                end
+              end
+            end
+
+          end
+        end
+      end
+    end
+  end
+end

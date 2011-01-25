@@ -1,0 +1,35 @@
+xml.div(:id=>'track-index',:class=>'section') do
+
+  xml.table() do
+    xml.thead do
+      xml.th("track", {:colspan => 2})
+      xml.th("rooms")
+    end
+    c = 0
+    xml.tbody do
+      @tracks.sort_by {|t| track_sort_base(t) }.each do |track|
+        c += 1
+        trclass = (c%2 == 0)?"even":"odd"
+
+        xml.tr(:class => trclass) do
+          xml.td({:class => "track-#{track.conference_track.urlify}"}) do
+            xml << " "
+          end
+          xml.td() do
+            xml.a(track.conference_track,{:href=>url_for(:action=>:track, :track=>track.conference_track)})
+          end
+          if @track_rooms.has_key?(track.conference_track_id) and not @track_rooms[track.conference_track_id].empty? then
+            xml.td do
+              @track_rooms[track.conference_track_id].each do |room|
+                xml.a(room.conference_room,{:href=>"../"+url_for(:action=>:room, :room=>room.conference_room)})
+              end
+            end
+          else
+            xml.td()
+            xml.td()
+          end
+        end
+      end
+    end
+  end
+end

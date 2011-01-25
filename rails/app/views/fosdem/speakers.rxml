@@ -1,0 +1,45 @@
+xml = Builder::XmlMarkup.new(:indent=>1)
+xml.div(:id=>'speaker-index',:class=>'section') do
+  xml.table(:class=>'speaker-index') do
+  
+    xml.tbody do
+      c = -1
+      opened = false
+      @mtspeakers.each_unique(:person_id) do | person |
+        next if person.name == "FOSDEM"
+
+        c += 1
+        if c >= @speakers_per_row then
+          xml << '</tr>'
+          c = 0
+        end
+        if c == 0 then
+          xml << '<tr>'
+        end
+        xml.td(:class=>'speaker speaker-image') do
+          xml.a(:href=>url_for(:action=>:speaker,:id=>sanitize_speaker_name(person.name))) do
+            xml.img(:class=>'speaker-image',:src=>person_image(person.person_id, 48))
+          end
+        end
+        xml.td(:class=>'speaker speaker-index-info') do
+          xml.a(person.name,{:href=>url_for(:action=>:speaker,:id=>sanitize_speaker_name(person.name)), :class=>'speaker-name'})
+          xml.ul(:class=>'events') do 
+            @mtspeakers.each_by_value({:person_id=>person.person_id}) do | event |
+              xml.li do
+                xml.a("- #{event.title}", {:href=>url_for(:action=>:event,:id=>event.event_id)})
+              end
+            end
+          end
+        end
+      end #speakers
+      c += 1
+      while (c < @speakers_per_row) do
+        xml.td(:class=>'speaker speaker-image')
+        xml.td(:class=>'speaker speaker-index-info')
+        c += 1
+      end
+      xml << '</tr>'
+    end #tbody
+
+  end #table
+end

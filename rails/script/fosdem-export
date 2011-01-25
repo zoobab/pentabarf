@@ -1,0 +1,464 @@
+#!/usr/bin/env ruby
+ENV['RAILS_ENV'] = 'production'
+require File.dirname(__FILE__) + '/../config/boot'
+require File.dirname(__FILE__) + '/../config/environment'
+require 'builder'
+require 'schedule_helper'
+include ScheduleHelper
+include ApplicationHelper
+require 'ftools'
+require 'set'
+require 'RMagick'
+
+lang = 'en'
+@here = Dir.pwd
+@timezone = 'Europe/Brussels'
+@conference = Conference.select_single(:acronym=>ARGV[0])
+@output_dir = "#{@here}/tmp/fosdem-export/#{@conference.acronym}"
+@grid_max_columns = 7
+@grid_max_title_length = 25
+
+IMAGE_SIZES = [22,32,48,128]
+
+#languages = View_conference_language.select(:conference_id=>@conference.conference_id,:translated=>'en')
+#languages = languages.map(&:language)
+#languages << 'en' if languages.length < 1
+
+File.umask(0002)
+
+begin
+  Dir.chdir(@output_dir)
+rescue Errno::ENOENT
+  File.makedirs(@output_dir)
+  Dir.chdir(@output_dir)
+end
+
+class String
+  def esc
+    return self.gsub(/'/, '\\\\\'')
+  end
+  def php
+    return "'" + self.esc + "'"
+  end
+  def namify
+    return self.split(/\s+/).map{|x| x.capitalize}.join(' ')
+  end
+  def shortnamify
+    bits = self.split(/\s+/)
+    return bits[0..-2].map{|x| x[0..0].upcase + "."}.join('') + bits[-1].capitalize
+  end
+  def shorttrack
+    return self.gsub(/\s+(track|devroom)$/i, '')
+  end
+  def urlify
+    return URI.escape(self.downcase.gsub(/[\.&\?\+\*]/, '').gsub(/\s+/, '_').gsub(/'/, '_')).gsub(/%C3%AB/u, 'e').gsub(/%E4/u, 'a').gsub(/%C3%EA/u, 'a').gsub(/%AB/u, 'e').gsub(/%C3%98/u, 'O').gsub(/%C3%A5/u, 'a').gsub(/%C3%A9/u, 'e').gsub(/%C3%B8/u, 'oe').gsub(/%C5%A1/u, 's').gsub(/%C3%A6/u, 'ae').gsub(/%C3%B6/u, 'oe').gsub(/%C3%A8/u, 'e').gsub(/%C3%BC/u, 'ue').gsub(/%C3%A4/u, 'ae').gsub(/%C3%AA/u, 'e').gsub(/%C3%AC/u, 'i').gsub(/%C3%AD/u, 'i').gsub(/%C3%A7/u, 'c').gsub(/%C3%9F/u, 'ss').gsub(/'/, '').gsub(/%C3%A1/u, 'a').gsub(/%C3%B1/u, 'n').gsub(/%C3%BD/u, 'y').gsub(/%C3%B3/u, 'o')
+  end
+end
+
+def h(str)
+  return str
+end
+
+def write_file( filename, content )
+  file = File.open( filename , File::CREAT | File::WRONLY | File::TRUNC )
+  file.write( content )
+  file.close
+end
+
+@speaker_map = {}
+@speaker_images = {}
+def speaker_has_image(id)
+  return @speaker_images.has_key? id
+end
+def speaker_image(id, size)
+  raise "No @speaker_images entry for speaker id #{id}" unless speaker_has_image(id)
+  raise "No @speaker_map entry for speaker id #{id}" unless @speaker_map.has_key? id
+  i = @speaker_images[id]
+  s = @speaker_map[id]
+  return "images/speaker/#{s.name.urlify}-#{size}x#{size}.#{mime_to_ext(i.mime_type)}"
+end
+
+def url_for(url)
+  url[:controller] ||= 'schedule'
+  url[:language] ||= 'en'
+  target = case url[:controller]
+    when 'schedule' then
+      case url[:action]
+        when :index then ""
+        when :day then "day/#{url[:id].downcase}"
+        when :event then "event/#{url[:slug]}"
+        when :event_attachment then "attachments/#{url[:event_attachment_id]}#{url[:filename].to_s.length > 0 ? '_' + url[:filename] : ''}"
+        when :events then "events.#{url[:language]}.html"
+        when :track_event then "track/#{url[:track]}/#{url[:id]}.#{url[:language]}.html"
+        when :track_events then "track/#{url[:track]}/index.#{url[:language]}.html"
+        when :track then "track/#{url[:track].urlify}"
+        when :room then "room/#{url[:room].urlify}"
+        when :speaker then "speaker/#{url[:name].urlify}"
+        when :speakers then "speakers.#{url[:language]}.html"
+        when :speaker_image then speaker_image(url[:id], url[:size])
+        when :css then 
+          "style.css"
+        end
+    when 'image' then
+      case url[:action]
+        when :conference then "images/conference-#{url[:size]}.#{url[:extension]}"
+        when :event then "images/event-#{url[:id]}-#{url[:size]}.#{url[:extension]}"
+        when :person then "images/person-#{url[:id]}-#{url[:size]}.#{url[:extension]}"
+      end
+    end
+  target
+end
+
+@current_language = lang
+@params = {}
+def local( tag, arguments = {} )
+  Localizer.lookup( tag.to_s, @current_language, arguments )
+end
+
+def mime_to_ext(mime)
+  ext = case mime
+        when "image/png" then "png"
+        when "image/jpeg" then "jpg"
+        else raise "Unsupported MIME type #{mime}"
+        end
+  return ext
+end
+
+def resize_image(image, size, mime)
+  format = case mime
+           when "image/png" then "PNG"
+           when "image/jpeg" then "JPEG"
+           else raise "Unsupported MIME type #{mime}"
+           end
+  resized = Magick::Image.from_blob(image)[0]
+  #resized.x_resolution = 72
+  #resized.y_resolution = 72
+  resized.format = format if format
+  resized.resize_to_fit!(size, size).strip!.to_blob
+end
+
+current_url = {:controller=>'schedule',:action=>:index,:language=>'en',:conference_id=>@conference.conference_id}
+
+@template_prefix = @here + '/' + File.dirname(__FILE__) + '/../app/views/fosdem/'
+
+def rxml(template_filename)
+  f = @template_prefix + template_filename + '.rxml'
+  template_content = File.new(f, "r").read
+  xml = Builder::XmlMarkup.new(:indent => 2)
+  params = @params
+  xml.div(:id=>'schedule') do
+    eval(template_content, binding(), f, 1)
+  end
+end
+
+def rxmlfile(template_filename, output_filename)
+  o = @output_dir + '/' + output_filename
+  o += '.html' unless o =~ /\./
+  d = File.dirname(o)
+  File.makedirs(d) #unless File.directory? d
+  puts "Rendering #{o}"
+  buffer = rxml(template_filename)
+  out = File.open(o, File::CREAT|File::WRONLY|File::TRUNC)
+  out.write(buffer)
+  out.close
+end
+
+def is_main_track(t)
+  raise "t is nil" if t.nil?
+  if (t.is_a? String) then
+    return (t =~ /^keynotes$/i or t =~ /track$/i) ? true : false
+  else
+    raise "#{t.class} (#{t.inspect}) does not have a conference_track method" unless t.respond_to?(:conference_track)
+    return is_main_track(t.conference_track)
+  end
+end
+
+def is_devroom_track(t)
+  raise "t is nil" if t.nil?
+  if (t.is_a? String) then
+    return (t =~ /devroom$/i) ? true : false
+  else
+    raise "#{t.class} (#{t.inspect}) does not have a conference_track method" unless t.respond_to?(:conference_track)
+    return is_devroom_track(t.conference_track)
+  end
+end
+
+
+def is_lightning_talk(t)
+  raise "t is nil" if t.nil?
+  if (t.is_a? String) then
+    return (t =~ /^lightning\s+talks?$/i) ? true : false
+  else
+    raise "#{t.class} (#{t.inspect}) does not have a conference_track method" unless t.respond_to?(:conference_track)
+    return is_lightning_talk(t.conference_track)
+  end
+end
+
+
+#################################################################################################################
+
+# make some output directories
+['images', 'images/speaker', 'event', 'speaker', 'track', 'attachments', 'room', 'day', 'includes'].each do |d|
+  File.makedirs(d)
+end
+
+@tracks = []
+@track_map = {}
+@main_tracks = []
+@devroom_tracks = []
+begin
+  tracks = Conference_track.select({:conference_id=>@conference.conference_id})
+  tracks.each do |t|
+    @tracks << t
+    @track_map[t.conference_track_id] = t
+    @main_tracks << t if is_main_track(t)
+    @devroom_tracks << t if is_devroom_track(t)
+  end
+end
+
+@event_person_id_map = {}
+@event_speakers = {}
+@speakers = []
+begin
+  ep = View_event_person.select({:translated=>lang, :conference_id=>@conference.conference_id, :event_role=>'speaker'})
+  ep.each do |x|
+    @event_person_id_map[x.event_id.to_i] = [] unless @event_person_id_map.has_key? x.event_id
+    @event_person_id_map[x.event_id.to_i] << x.person_id.to_i
+  end
+  @event_person_id_map.each do |eid,pids|
+    @event_speakers[eid] = [] unless @event_speakers.has_key? eid
+    pids.each do |pid|
+      p = View_schedule_person_fosdem.select({:person_id=>pid, :event_role=>'speaker'})
+      p.each do |person|
+        @event_speakers[eid] << person
+        if not @speaker_map.has_key? person.person_id then
+          @speakers << person
+          @speaker_map[person.person_id] = person
+        end
+      end
+      #raise "Failed to find view_event_person for :person_id = #{pid}" unless count > 0
+    end
+  end
+  @event_speakers.each do |eid,speakers|
+    speakers.uniq!
+  end
+end
+@speakers.uniq!
+
+@events = []
+@event_map = {}
+@speaker_events = {}
+@main_track_events_by_track = nil
+begin
+  events = View_schedule_event_fosdem.select({:translated=>lang, :conference_id=>@conference.conference_id},{:order=>[:title,:subtitle]})
+  events.each do |e|
+    @events << e
+    @event_map[e.event_id] = e
+    if @event_speakers.has_key? e.event_id then
+      @event_speakers[e.event_id].each do |person|
+        @speaker_events[person.person_id] = [] unless @speaker_events.has_key? person.person_id
+        @speaker_events[person.person_id] << e
+      end
+    end
+  end
+end
+
+def track_sort_base(track)
+  -(track.rank + case track.conference_track
+         when /^keynote/i then 10000
+         when /track$/i then 1000
+         when /^lightning/i then 500
+         when /devroom$/i then 100
+         else 0
+         end)
+end
+
+@tracks = []
+@track_map = {}
+begin
+  tracks = Conference_track.select({:conference_id=>@conference.conference_id},{:order=>:rank})
+  tracks.each do |t|
+    @tracks << t
+    @track_map[t.conference_track_id] = t
+  end
+end
+
+@rooms = []
+@room_map = {}
+begin
+  rooms = Conference_room.select({:conference_id=>@conference.conference_id}, {:public=>true})
+  rooms.each do |room|
+    @rooms << room
+    @room_map[room.conference_room_id] = room
+  end
+end
+
+@room_events = {}
+begin
+  @events.each do |e|
+    rid = e.conference_room_id
+    next if rid.nil?
+    @room_events[rid] = [] unless @room_events.has_key? rid
+    @room_events[rid] << e
+  end
+  @room_events.each do |rid,events|
+    events.uniq!
+  end
+end
+
+@track_rooms = {}
+begin
+  @events.each do |e|
+    rid = e.conference_room_id
+    r = @room_map[rid]
+    tid = e.conference_track_id
+    @track_rooms[tid] = [] unless @track_rooms.has_key? tid
+    @track_rooms[tid] << r
+  end
+  @track_rooms.each do |tid,rooms|
+    rooms.uniq!
+  end
+end
+
+begin
+  images = Person_image.select({})
+  images.each do |img|
+    next unless img.public
+    next unless @speaker_map.has_key? img.person_id
+    speaker = @speaker_map[img.person_id]
+    @speaker_images[img.person_id] = img
+    IMAGE_SIZES.each do |size|
+      ext = mime_to_ext(img.mime_type)
+      f = "images/speaker/#{speaker.name.urlify}-#{size}x#{size}.#{ext}"
+      #puts "Rendering image #{f}"
+      write_file(f, resize_image(img.image, size, img.mime_type)) #'PNG'))
+    end
+  end
+end
+
+begin
+    
+  # Tias testing
+  rxmlfile('xml', "schedule.#{lang}.xml")
+  rxmlfile('xcal', "schedule.#{lang}.xcs")
+
+  @urlprefix = ''
+  rxmlfile('days', 'days')
+  begin
+    @urlprefix = '../'
+    [1, 2].each do |@day|
+      rxmlfile('days', "day/#{@day}")
+    end
+  end
+  rxmlfile('rooms', 'rooms')
+  @speakers_per_row = 4
+  rxmlfile('allspeakers', 'allspeakers')
+  rxmlfile('maintracks', 'maintracks')
+  rxmlfile('tracks', 'tracks')
+  rxmlfile('devrooms', 'devrooms')
+  rxmlfile('events', 'events')
+end
+
+begin
+  @speakers.each do |speaker|
+    @speaker = speaker
+    rxmlfile('speaker', "speaker/#{speaker.name.urlify}")
+  end
+end
+
+begin
+  @events.each do |event|
+    @event = event
+    rxmlfile('event', "event/#{event.slug}")
+  end
+end
+
+begin
+  @no_speaker_image = true
+  @tracks.each do |track|
+    @track = track
+    @track_events = @events.select {|e| e.conference_track_id == track.conference_track_id}
+    rxmlfile('track', "track/#{@track.conference_track.urlify}")
+  end
+end
+
+begin
+  @rooms.each do |room|
+    @room = room
+    rxmlfile('room', "room/#{room.conference_room.urlify}")
+  end
+end
+
+File.open("includes/maps.php", File::CREAT|File::WRONLY|File::TRUNC) do |f|
+  f.puts "<?php"
+  f.puts '$PENTABARF_EVENT_TITLE_BY_URL = array();'
+  f.puts '$PENTABARF_PERSON_NAME_BY_URL = array();'
+  f.puts '$PENTABARF_TRACK_NAME_BY_URL  = array();'
+  f.puts '$PENTABARF_ROOM_NAME_BY_URL   = array();'
+  f.puts '$PENTABARF_DAY_NAME_BY_ID     = array();'
+  f.puts '$PENTABARF_DAY_NAME_BY_URL    = array();'
+  f.puts '$PENTABARF_DAY_ID_BY_URL      = array();'
+  f.puts
+
+  @events.each do |e|
+    raise "slug is nil for event #{e.title} (#{e.event_id})" if e.slug.nil?
+    f.puts "$PENTABARF_EVENT_TITLE_BY_URL[#{e.slug.php}] = #{e.title.php};"
+  end
+  f.puts
+  @speakers.each do |s|
+    f.puts "$PENTABARF_PERSON_NAME_BY_URL[#{s.name.urlify.php}] = #{s.name.namify.php};"
+  end
+  f.puts
+  @tracks.each do |t|
+    f.puts "$PENTABARF_TRACK_NAME_BY_URL[#{t.conference_track.urlify.php}] = #{t.conference_track.php};"
+  end
+  @rooms.each do |r|
+    f.puts "$PENTABARF_ROOM_NAME_BY_URL[#{r.conference_room.urlify.php}] = #{r.conference_room.php};"
+  end
+  begin
+    first_day = @events.map{|e| e.start_datetime.to_date}.min
+    @events.map{|e| e.start_datetime.to_date}.uniq.sort.each do |d|
+      id = (d - first_day) + 1
+      f.puts "$PENTABARF_DAY_NAME_BY_ID[#{id}] = #{d.strftime("%A %F").php};"
+      f.puts "$PENTABARF_DAY_NAME_BY_URL[#{d.strftime("%a").downcase.php}] = #{d.strftime("%A %F").php};"
+      f.puts "$PENTABARF_DAY_ID_BY_URL[#{d.strftime("%a").downcase.php}] = #{id};"
+    end
+  end
+end #f
+
+File.open("schedule.#{lang}.ics", File::CREAT|File::WRONLY|File::TRUNC) do |f|
+  f.puts "BEGIN:VCALENDAR"
+  f.puts "VERSION:2.0"
+  f.puts "PRODID:-//Pentabarf//Schedule 0.3//EN"
+  f.puts "CALSCALE:GREGORIAN"
+  f.puts "METHOD:PUBLISH"
+  f.puts "X-WR-CALDESC;VALUE=TEXT:#{@conference.acronym} Schedule Release 1"
+  f.puts "X-WR-CALNAME;VALUE=TEXT:#{@conference.acronym} Schedule"
+  f.puts "X-WR-TIMEZONE;VALUE=TEXT:#{@timezone}"
+  @events.sort_by{|e| e.start_datetime}.each do |event|
+    f.puts "BEGIN:VEVENT"
+    f.puts "METHOD:PUBLISH"
+    f.puts "UID:#{event.event_id}@#{@conference.acronym}@fosdem.org"
+    f.puts "TZID:#{@timezone.gsub('/', '-')}"
+    f.puts "DTSTART:#{event.start_datetime.strftime('%Y%m%dT%H%M%S')}"
+    f.puts "DTEND:#{event.end_datetime.strftime('%Y%m%dT%H%M%S')}"
+    f.puts "DURATION:PT#{event.duration.hour.to_s + 'H'}"
+    f.puts "SUMMARY:#{event.title}"
+    if event.abstract.to_s.length > 0 then
+      f.puts "DESCRIPTION: #{event.abstract.to_s.gsub(/[\r\n]/,'')}"
+    end
+    f.puts "CLASS:PUBLIC"
+    f.puts "STATUS:CONFIRMED"
+    f.puts "CATEGORY:Lecture"
+    f.puts "URL:#{@conference.export_base_url}event/#{event.slug}"
+    f.puts "LOCATION:#{event.conference_room}"
+    (@event_speakers[event.event_id] or []).each do |speaker|
+      f.puts "ATTENDEE;ROLE=REQ-PARTICIPANT;CUTYPE=INDIVIDUAL;CN=\"#{speaker.name.namify}\":invalid:nomail"
+    end
+    f.puts "END:VEVENT"
+  end #event
+  f.puts "END:VCALENDAR"
+end #f
+
+exit 0
+

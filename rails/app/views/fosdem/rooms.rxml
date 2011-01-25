@@ -1,0 +1,23 @@
+xml.div(:id=>'room-index',:class=>'section') do
+  xml.table(:class=>'track-index') do
+    xml.thead do
+      xml.tr do
+        xml.th(local('schedule::room'),{:class=>'room'})
+        xml.th('Capacity')
+      end
+    end
+    xml.tbody do
+      c = 0
+      @rooms.sort_by {|r| r.rank}.each do | room |
+        c += 1
+        trclass = (c%2==0) ? "even":"odd"
+        xml.tr(:class=>trclass) do
+          xml.td() do
+            xml.a(room.conference_room,{:href=>url_for(:action=>:room, :room=>room.conference_room)})
+          end
+          xml.td(room.size)
+        end
+      end
+    end
+  end
+end

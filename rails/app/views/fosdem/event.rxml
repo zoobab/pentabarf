@@ -1,0 +1,223 @@
+youtube = nil
+
+xml.div(:id=>'event',:class=>'section eventpage') do
+
+  xml.div(:id=>'event-meta') do
+
+    xml.div(:id=>'infobox') do
+      xml.table do
+        xml.tr do
+          xml.th(local('schedule::speakers'),{:colspan=>'2'})
+        end
+        (@event_speakers[@event.event_id] or []).each do | speaker |
+          xml.tr do
+            xml.td do
+              if speaker_has_image(speaker.person_id) then
+                xml.a(:href=>'../'+url_for(:action=>:speaker,:name=>speaker.name)) do
+                  xml.img(:src=>"../"+speaker_image(speaker.person_id, 48))
+                end
+              end
+            end
+            xml.td do
+              xml.a(speaker.name,{:href=>'../'+url_for(:action=>:speaker,:name=>speaker.name)})
+            end
+          end
+        end
+        xml.tr do
+          xml.th(local('schedule::schedule'),{:colspan=>2})
+        end
+        xml.tr do
+          xml.td(local('schedule::day'),{:class=>'keyword'})
+          xml.td(:class=>'value') do
+            xml.a(@event.start_datetime.strftime('%A'), {:href=>'../'+url_for(:action=>:day, :id=>@event.start_datetime.strftime('%a').downcase)})
+          end
+        end# tr
+        xml.tr do
+          xml.td(local('schedule::room'),{:class=>'keyword'})
+          xml.td(:class=>'value') do
+            xml.a(@event.conference_room,{:href=>'../'+url_for(:action=>:room, :room=>@event.conference_room)})
+          end
+        end # tr
+        xml.tr do
+          xml.td('Capacity', {:class=>'keyword'})
+          xml.td(:class=>'value') do
+            r = @room_map[@event.conference_room_id]
+            xml.text! r.size.to_s
+          end
+        end #tr
+        xml.tr do
+          xml.td(local('schedule::start_time'),{:class=>'keyword'})
+          xml.td(@event.start_time.strftime('%H:%M'),{:class=>'value'})
+        end # tr
+        xml.tr do
+          xml.td('End time',{:class=>'keyword'})
+          xml.td((@event.start_time + @event.duration).strftime('%H:%M'),{:class=>'value'})
+        end # tr
+        xml.tr do
+          xml.td(local('schedule::event_duration'),{:class=>'keyword'})
+          xml.td(@event.duration.strftime('%H:%M'),{:class=>'value'})
+        end # tr
+        xml.tr do
+          xml.th('Info',{:colspan=>2})
+        end
+        xml.tr do
+          xml.td(local('schedule::conference_track'),{:class=>'keyword'})
+          xml.td(:class=>"value track-#{@event.conference_track.urlify}") do
+            xml.a(@event.conference_track, {:href=>'../'+url_for(:action=>:track, :track=>@event.conference_track)})
+          end
+        end
+        media = []
+        #View_event_media.select({:event_id => @event.event_id}).each_unique(:event_media_id) do | m |
+        #  if m.event_media_tag == 'youtube' then
+        #    # skip youtube as it will be rendered with the embedded player instead
+        #    youtube = m.event_media_url
+        #  else
+        #    media << { 'label' => m.label, 'url' => m.event_media_url, 'tag' => m.event_media_tag }
+        #  end
+        #end
+        if not media.empty? then
+          xml.tr do
+            xml.th('Media',{:colspan=>2})
+          end
+          media.each do | m |
+            xml.tr do
+              xml.td({:colspan => 2}) do
+                xml.a(m['label'], {:href=>'../'+m['url'], :class=>"event-media-link event-media-link-#{m['tag']}"})
+              end
+            end
+          end # media.each
+        end # if not media.empty?
+      end # table
+   
+    end # div: infobox
+
+    #xml.div(:class=>'title') do
+    #  xml.div(@event.title, {:class=>'title-event'})
+    #end
+
+    if @event.abstract != nil and @event.abstract != "" then
+      xml.div({:class=>'abstract'}) do
+        xml << markup(@event.abstract)
+      end
+    end
+    if @event.description != nil and @event.description != "" then
+      xml.div({:class=>'description'}) do
+        xml << markup(@event.description)
+      end
+    end
+
+    links = Event_link.select({:event_id=>@event.event_id})
+    if links.length > 0
+      xml.div(:class=>'links') do
+        xml.h2('Links:')
+        xml.ul do
+          links.each do | link |
+            xml.li do
+              xml.a( link.title ? link.title : link.url, {:href=>link.url})
+            end
+          end # links.each
+        end # ul
+      end # div#links
+    end # if links
+
+  end # div: #event-meta
+
+  if youtube != nil then
+    youtube_url = "http://www.youtube-nocookie.com/v/#{youtube}&hl=en_US&fs=1&rel=0"
+    xml.div(:class=>'youtube', :id=>'youtube') do
+      xml.object(:width=>'640', :height=>'385') do
+        xml.param(:name=>'movie', :value=>youtube_url)
+        xml.param(:name=>'allowFullScreen', :value=>'true')
+        xml.param(:name=>'allowscriptaccess', :value=>'always')
+        xml.embed(:src=>youtube_url, :type=>'application/x-shockwave-flash', :allowscriptaccess=>'always', :allowfullscreen=>'true', :width=>'640', :height=>'385')
+      end #object
+    end
+  end
+
+  #related_events = View_event_related.select({:event_id1=>@event.event_id}) #, nil, "day, start_time")
+  #real_related_events_num = 0
+  #related_events.each do | related |
+  #  @related = @event_map[related.event_id]
+  #  real_related_events_num += 1 #if @related.day and @related.room_id
+  #end
+
+  #if real_related_events_num > 0
+  #  xml.div(:class=>'related', :id=>'event-related') do
+  #    xml.h2('Related events:')
+  #		c = 0
+  #    xml.table() do
+  #      xml.thead() do
+  #        xml.tr() do
+  #          xml.th(local('schedule::conference_track'),{:class=>'event'})
+  #          xml.th(local('schedule::event'),{:class=>'event'})
+  #          xml.th(local('schedule::room'),{:class=>'room'})
+  #          xml.th('When',{:class=>'start-time day'})
+  #        end
+  #      end
+  #      xml.body() do
+  #        related_events.each do | related_event |
+  #          @related = @event_map[related.event_id]
+  #          #next unless @related.day
+  #          c += 1
+  #          c %= 2
+  #          trclass = c == 1 ? "even" : "odd"
+  #          xml.tr(:class=>trclass) do
+  #            xml.td(:class=>sanitize_track(@related.conference_track_tag)) do
+  #              xml.a(@related.conference_track, {:href=>url_for(:action=>:track, :track=>@related.conference_track)})
+  #            end
+  #            xml.td() do
+  #              xml.a(@related.title, {:href=>url_for(:action=>:event, :slug=>@related.slug)})
+  #            end
+  #            xml.td() do
+  #              xml.a(@related.room, {:href=>url_for(:action=>:room, :room=>@related.conference_room)})
+  #            end
+  #            xml.td() do
+  #              xml.a(@related.start_datetime.strftime('%A'), {:href=>url_for(:action=>:day, :id=>@related.start_datetime.strftime('%a').downcase)})
+  #              xml << "&nbsp;#{@related.start_time.strftime('%H:%M')}-#{(@related.start_time + @related.duration).strftime('%H:%M')}"
+  #            end
+  #          end # tr
+  #        end # related_events.each
+  #      end # body
+  #    end
+  #  end
+  #end
+
+  sametime_events = @events.select {|e| e.event_id != @event.event_id and ((e.start_datetime <= @event.start_datetime and e.end_datetime >= @event.start_datetime) or (e.start_datetime >= @event.start_datetime and e.start_datetime < @event.end_datetime)) }.sort_by {|e| e.start_time}
+  if not sametime_events.empty? then
+    c = 0
+    xml.div(:class=>'sametime', :id=>'event-sametime') do
+      xml.h2('Other events at the same time:')
+      xml.table() do
+        xml.thead() do
+          xml.tr() do
+            xml.th('When',{:class=>'start-time'})
+            xml.th(local('schedule::event'),{:class=>'event'})
+            xml.th(local('schedule::conference_track'),{:class=>'event'})
+            xml.th('Where',{:class=>'event room'})
+          end # tr
+        end # thead
+        xml.tbody() do
+          sametime_events.each do |e|
+            c += 1
+            trclass = (c % 2 == 1) ? "even" : "odd"
+            xml.tr(:class=>trclass) do
+              xml.td() do
+                xml << "#{e.start_time.strftime('%H:%M')}-#{(e.start_time + e.duration).strftime('%H:%M')}"
+              end # td
+              xml.td() do
+                xml.a(e.title, {:href=>'../'+url_for(:action=>:event, :slug=>e.slug)})
+              end # td
+              xml.td(:class=>"track-#{e.conference_track.urlify}") do
+                xml.a(e.conference_track, {:href=>'../'+url_for(:action=>:track, :track=>e.conference_track)})
+              end # td
+              xml.td() do
+                xml.a(e.conference_room, {:href=>'../'+url_for(:action=>:room, :room=>e.conference_room)})
+              end
+            end # tr
+          end # sametime_events.each
+        end # tbody
+      end # table
+    end # div
+  end # if not sametime_event_ids.empty?
+
+end
