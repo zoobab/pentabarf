@@ -1,28 +1,36 @@
-@events.each do | event |
-  xml.vevent do
-    xml.method( "PUBLISH" )
-    xml.uid( "#{event.event_id}@#{@conference.acronym}@pentabarf.org")
-    xml.tag!( "pentabarf:event-id", event.event_id )
-    xml.tag!( "pentabarf:event-slug", event.slug )
-    xml.tag!( "pentabarf:title", event.title )
-    xml.tag!( "pentabarf:subtitle", event.subtitle )
-    xml.tag!( "pentabarf:language", event.language_name )
-    xml.tag!( "pentabarf:language-code", event.language )
-    xml.dtstart( event.start_datetime.strftime('%Y%m%dT%H%M%S') )
-    xml.dtend( (event.start_datetime + event.duration).strftime('%Y%m%dT%H%M%S') )
-    xml.duration( event.duration.strftime('%HH%MM%SS') )
-    xml.summary( event.title + ( event.subtitle ? "- #{event.subtitle}" : "" ) )
-    xml.description( event.abstract )
-    xml.class( "PUBLIC" )
-    xml.status( "CONFIRMED" )
-    xml.category( "Lecture" )
-    xml.url( "#{@conference.export_base_url}events/#{event.event_id}.en.html" )
-    xml.location( event.conference_room )
-    unless @event_speakers[event.event_id].nil?
-      @event_speakers[event.event_id].each do | speaker |
-        xml.attendee( speaker.name )
-      end
-    end
-  end
-end
-
+xml.instruct!
+xml.iCalendar(:"xmlns:xCal"=>"urn:ietf:params:xml:ns:xcal", :"xmlns:pentabarf"=>"http://pentabarf.org") do
+  xml.vcalendar do
+    xml.version "2.0"
+    xml.prodid "-//Pentabarf//Schedule 1.0//EN"
+    xml.tag! :"x-wr-caldesc", "#{@conference.acronym} Schedule Release 1.0"
+    xml.tag! :"x-wr-calname", "#{@conference.acronym} Schedule"
+    @events.sort_by{|e| e.start_datetime}.each do | event |
+      xml.vevent do
+        xml.method( "PUBLISH" )
+        xml.uid( "#{event.event_id}@#{@conference.acronym}@pentabarf.org")
+        xml.tag!( "pentabarf:event-id", event.event_id )
+        xml.tag!( "pentabarf:event-slug", event.slug )
+        xml.tag!( "pentabarf:title", event.title )
+        xml.tag!( "pentabarf:subtitle", event.subtitle )
+        xml.tag!( "pentabarf:language", @language )
+        xml.tag!( "pentabarf:language-code", @lang )
+        xml.tag!( "pentabarf:start", event.start_datetime.strftime('%Y-%m-%d %H:%M:%S %z'))
+        xml.tag!( "pentabarf:end", event.end_datetime.strftime('%Y-%m-%d %H:%M:%S %z'))
+        xml.dtstart( event.start_datetime.strftime('%Y%m%dT%H%M%S') )
+        xml.dtend( (event.start_datetime + event.duration).strftime('%Y%m%dT%H%M%S') )
+        xml.duration( event.duration.strftime('%HH%MM%SS') )
+        xml.summary( event.title + ( event.subtitle ? "- #{event.subtitle}" : "" ) )
+        xml.description( event.abstract )
+        xml.class( "PUBLIC" )
+        xml.status( "CONFIRMED" )
+        xml.category( "Lecture" )
+        xml.url( "#{@conference.export_base_url}event/#{url_for(:target=>:event, :slug=>event.slug)}" )
+        xml.location( event.conference_room )
+        (@event_speakers[event.event_id] or []).each do | speaker |
+          xml.attendee( speaker.name.namify )
+        end #speaker
+      end #vevent
+    end #events
+  end #vcalendar
+end #iCalendar
