@@ -338,9 +338,8 @@ end
 
 begin
     
-  # Tias testing
-  rxmlfile('xml', "schedule.#{lang}.xml")
-  rxmlfile('xcal', "schedule.#{lang}.xcs")
+  rxmlfile('xml', "schedule.#{@lang}.xml", false)
+  rxmlfile('xcal', "schedule.#{@lang}.xcs", false)
 
   @urlprefix = ''
   rxmlfile('days', 'days')
@@ -426,39 +425,45 @@ File.open("includes/maps.php", File::CREAT|File::WRONLY|File::TRUNC) do |f|
   end
 end #f
 
-File.open("schedule.#{lang}.ics", File::CREAT|File::WRONLY|File::TRUNC) do |f|
-  f.puts "BEGIN:VCALENDAR"
-  f.puts "VERSION:2.0"
-  f.puts "PRODID:-//Pentabarf//Schedule 0.3//EN"
-  f.puts "CALSCALE:GREGORIAN"
-  f.puts "METHOD:PUBLISH"
-  f.puts "X-WR-CALDESC;VALUE=TEXT:#{@conference.acronym} Schedule Release 1"
-  f.puts "X-WR-CALNAME;VALUE=TEXT:#{@conference.acronym} Schedule"
-  f.puts "X-WR-TIMEZONE;VALUE=TEXT:#{@timezone}"
-  @events.sort_by{|e| e.start_datetime}.each do |event|
-    f.puts "BEGIN:VEVENT"
-    f.puts "METHOD:PUBLISH"
-    f.puts "UID:#{event.event_id}@#{@conference.acronym}@fosdem.org"
-    f.puts "TZID:#{@timezone.gsub('/', '-')}"
-    f.puts "DTSTART:#{event.start_datetime.strftime('%Y%m%dT%H%M%S')}"
-    f.puts "DTEND:#{event.end_datetime.strftime('%Y%m%dT%H%M%S')}"
-    f.puts "DURATION:PT#{event.duration.hour.to_s + 'H'}"
-    f.puts "SUMMARY:#{event.title}"
-    if event.abstract.to_s.length > 0 then
-      f.puts "DESCRIPTION: #{event.abstract.to_s.gsub(/[\r\n]/,'')}"
-    end
-    f.puts "CLASS:PUBLIC"
-    f.puts "STATUS:CONFIRMED"
-    f.puts "CATEGORY:Lecture"
-    f.puts "URL:#{@conference.export_base_url}event/#{event.slug}"
-    f.puts "LOCATION:#{event.conference_room}"
-    (@event_speakers[event.event_id] or []).each do |speaker|
-      f.puts "ATTENDEE;ROLE=REQ-PARTICIPANT;CUTYPE=INDIVIDUAL;CN=\"#{speaker.name.namify}\":invalid:nomail"
-    end
-    f.puts "END:VEVENT"
-  end #event
-  f.puts "END:VCALENDAR"
-end #f
+begin
+  eol = $\
+  $\ = "\r\n"
+  File.open("schedule.#{@lang}.ics", File::CREAT|File::WRONLY|File::TRUNC) do |f|
+    f.print "BEGIN:VCALENDAR"
+    f.print "VERSION:2.0"
+    f.print "PRODID:-//Pentabarf//Schedule 0.3//EN"
+    f.print "CALSCALE:GREGORIAN"
+    f.print "METHOD:PUBLISH"
+    f.print "X-WR-CALDESC;VALUE=TEXT:#{@conference.acronym} Schedule Release 1"
+    f.print "X-WR-CALNAME;VALUE=TEXT:#{@conference.acronym} Schedule"
+    f.print "X-WR-TIMEZONE;VALUE=TEXT:#{@timezone}"
+    @events.sort_by{|e| e.start_datetime}.each do |event|
+      f.print "BEGIN:VEVENT"
+      f.print "METHOD:PUBLISH"
+      f.print "UID:#{event.event_id}@#{@conference.acronym}@fosdem.org"
+      f.print "TZID:#{@timezone.gsub('/', '-')}"
+      f.print "DTSTART:#{event.start_datetime.strftime('%Y%m%dT%H%M%S')}"
+      f.print "DTEND:#{event.end_datetime.strftime('%Y%m%dT%H%M%S')}"
+      f.print "DURATION:PT#{event.duration.hour.to_s + 'H'}"
+      f.print "SUMMARY:#{event.title}"
+      if event.abstract.to_s.length > 0 then
+        f.print "DESCRIPTION: #{event.abstract.to_s.gsub(/[\r\n]/,'')}"
+      end
+      f.print "CLASS:PUBLIC"
+      f.print "STATUS:CONFIRMED"
+      #reported as an illegal tag:
+      #f.puts "CATEGORY:Lecture"
+      f.print "URL:#{@conference.export_base_url}event/#{event.slug}"
+      f.print "LOCATION:#{event.conference_room}"
+      (@event_speakers[event.event_id] or []).each do |speaker|
+        f.print "ATTENDEE;ROLE=REQ-PARTICIPANT;CUTYPE=INDIVIDUAL;CN=\"#{speaker.name.namify}\":invalid:nomail"
+      end
+      f.print "END:VEVENT"
+    end #event
+    f.print "END:VCALENDAR"
+  end #f
+  $\ = eol
+end #ical
 
 exit 0
 
