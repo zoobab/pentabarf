@@ -188,7 +188,7 @@ xml.div(:id=>'event',:class=>'section eventpage') do
     ['sameroom', "Next (up to 3) talks in the same room (#{@event.conference_room})", lambda {|e| event_next_in_room(e, @event) }, (0 .. 2), false],
     ['upcoming', 'Events that start after this one (within 30 minutes)', lambda {|e| event_is_upcoming_to(e, @event, 30.minutes) }, (0 .. -1), true]
   ].each do |css, heading, selector, slicer, with_room|
-    event_list = @events.select{|e| e.event_id != @event.event_id and selector.call(e) }.sort_by{|e| [((e.conference_room_id==@event.conference_room_id)? 1 : 0),e.start_time,e.duration]}.slice(slicer)
+    event_list = @events.select{|e| e.event_id != @event.event_id and selector.call(e) }.sort_by{|e| [e.start_time,((e.conference_room_id==@event.conference_room_id)? -1 : 1),e.duration]}.slice(slicer)
     next if event_list.empty?
 
     c = 0
