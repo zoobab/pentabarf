@@ -326,7 +326,7 @@ begin
 end
 
 def track_sort_base(track)
-  -(track.rank + case track.conference_track
+  -(-track.rank + case track.conference_track
          when /^keynote/i then 10000
          when /track$/i then 1000
          when /^lightning/i then 500
