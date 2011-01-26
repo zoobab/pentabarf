@@ -5,6 +5,16 @@ xml.div(:id=>'track',:class=>'section') do
     end
     xml << @track.conference_track
   end
+  xml.div({:id=>"event-track-cal"}) do
+    xml.ul do
+      xml.li do
+        xml.a("ical",{:href=>"../"+url_for(:action=>:track_ical,:track=>@track.conference_track),:class=>"ical",:id=>"event-track-ical"})
+      end
+      xml.li do
+        xml.a("xcal",{:href=>"../"+url_for(:action=>:track_xcal,:track=>@track.conference_track),:class=>"xcal",:id=>"event-track-xcal"})
+      end
+    end #ul
+  end #div
   rooms = (@track_rooms[@track.conference_track_id] or [])
   if not (rooms.nil? or rooms.empty?) then
     xml.div({:id=>"track-rooms"}) do

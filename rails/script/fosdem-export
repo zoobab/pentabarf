@@ -150,6 +150,8 @@ def url_for(url)
         when :track_event then "track/#{url[:track]}/#{url[:id]}.#{url[:language]}.html"
         when :track_events then "track/#{url[:track]}/index.#{url[:language]}.html"
         when :track then "track/#{url[:track].urlify}"
+        when :track_ical then "track/#{url[:track].urlify}.ics"
+        when :track_xcal then "track/#{url[:track].urlify}.xcs"
         when :room then "room/#{url[:room].urlify}"
         when :speaker then "speaker/#{url[:name].urlify}"
         when :speakers then "speakers.#{url[:language]}.html"
@@ -380,6 +382,52 @@ begin
   end
 end
 
+def ical(calname, filename, events)
+  eol = $\
+  $\ = "\r\n"
+  o = @output_dir + '/' + filename
+  puts "Rendering #{o}"
+  File.open(o, File::CREAT|File::WRONLY|File::TRUNC) do |f|
+    # use print here and not puts, as ics files MUST be CRLF (as of RFC2445) and
+    # $\ only affects print, and not puts
+    f.print "BEGIN:VCALENDAR"
+    f.print "VERSION:2.0"
+    f.print "PRODID:-//Pentabarf//Schedule 0.3//EN"
+    f.print "CALSCALE:GREGORIAN"
+    f.print "METHOD:PUBLISH"
+    f.print "X-WR-CALDESC;VALUE=TEXT:Schedule of sessions for #{calname}"
+    f.print "X-WR-CALNAME;VALUE=TEXT:#{calname} Schedule"
+    f.print "X-WR-TIMEZONE;VALUE=TEXT:#{@timezone}"
+    events.sort_by{|e| e.start_datetime}.each do |event|
+      f.print "BEGIN:VEVENT"
+      f.print "METHOD:PUBLISH"
+      f.print "UID:#{event.event_id}@#{@conference.acronym}@fosdem.org"
+      f.print "TZID:#{@timezone.gsub('/', '-')}"
+      f.print "DTSTART:#{event.start_datetime.strftime('%Y%m%dT%H%M%S')}"
+      f.print "DTEND:#{event.end_datetime.strftime('%Y%m%dT%H%M%S')}"
+      # having both DTEND and DURATION breaks Apple's iCal, go figure
+      #f.print "DURATION:PT#{event.duration.hour.to_s + 'H'}"
+      f.print "SUMMARY:#{event.title}"
+      if event.abstract.to_s.length > 0 then
+        f.print "DESCRIPTION: #{event.abstract.to_s.gsub(/[\r\n]/,'')}"
+      end
+      f.print "CLASS:PUBLIC"
+      f.print "STATUS:CONFIRMED"
+      f.print "CATEGORIES:#{event.conference_track}"
+      f.print "URL:#{@conference.export_base_url}event/#{event.slug}"
+      f.print "LOCATION:#{event.conference_room}"
+      (@event_speakers[event.event_id] or []).each do |speaker|
+        f.print "ATTENDEE;ROLE=REQ-PARTICIPANT;CUTYPE=INDIVIDUAL;CN=\"#{speaker.name.namify}\":invalid:nomail"
+      end
+      f.print "END:VEVENT"
+    end #event
+    f.print "END:VCALENDAR"
+  end #f
+  $\ = eol
+end #ical
+
+#################################################################################################
+
 begin
   images = Person_image.select({})
   images.each do |img|
@@ -397,9 +445,20 @@ begin
 end
 
 begin
-    
   rxmlfile('xml', "schedule.#{@lang}.xml", false)
-  rxmlfile('xcal', "schedule.#{@lang}.xcs", false)
+  begin
+    @xcal_events = @events
+    @xcal_cal = "#{@conference.acronym}"
+    rxmlfile('xcal', "schedule.#{@lang}.xcs", false)
+  end
+  ical("#{@conference.acronym}", "schedule.#{@lang}.ics", @events)
+  @tracks.each do |track|
+    track_events = @events.select{|e| e.conference_track_id == track.conference_track_id}
+    ical("#{@conference.acronym} (#{track.conference_track})", "track/#{track.conference_track.urlify}.ics", track_events)
+    @xcal_events = track_events
+    @xcal_cal = "#{@conference.acronym} (#{track.conference_track})"
+    rxmlfile('xcal', "track/#{track.conference_track.urlify}.xcs", false)
+  end
 
   @urlprefix = ''
   rxmlfile('days', 'days')
@@ -488,46 +547,6 @@ File.open("includes/maps.php", File::CREAT|File::WRONLY|File::TRUNC) do |f|
     end
   end
 end #f
-
-begin
-  eol = $\
-  $\ = "\r\n"
-  File.open("schedule.#{@lang}.ics", File::CREAT|File::WRONLY|File::TRUNC) do |f|
-    f.print "BEGIN:VCALENDAR"
-    f.print "VERSION:2.0"
-    f.print "PRODID:-//Pentabarf//Schedule 0.3//EN"
-    f.print "CALSCALE:GREGORIAN"
-    f.print "METHOD:PUBLISH"
-    f.print "X-WR-CALDESC;VALUE=TEXT:#{@conference.acronym} Schedule Release 1"
-    f.print "X-WR-CALNAME;VALUE=TEXT:#{@conference.acronym} Schedule"
-    f.print "X-WR-TIMEZONE;VALUE=TEXT:#{@timezone}"
-    @events.sort_by{|e| e.start_datetime}.each do |event|
-      f.print "BEGIN:VEVENT"
-      f.print "METHOD:PUBLISH"
-      f.print "UID:#{event.event_id}@#{@conference.acronym}@fosdem.org"
-      f.print "TZID:#{@timezone.gsub('/', '-')}"
-      f.print "DTSTART:#{event.start_datetime.strftime('%Y%m%dT%H%M%S')}"
-      f.print "DTEND:#{event.end_datetime.strftime('%Y%m%dT%H%M%S')}"
-      f.print "DURATION:PT#{event.duration.hour.to_s + 'H'}"
-      f.print "SUMMARY:#{event.title}"
-      if event.abstract.to_s.length > 0 then
-        f.print "DESCRIPTION: #{event.abstract.to_s.gsub(/[\r\n]/,'')}"
-      end
-      f.print "CLASS:PUBLIC"
-      f.print "STATUS:CONFIRMED"
-      #reported as an illegal tag:
-      #f.puts "CATEGORY:Lecture"
-      f.print "URL:#{@conference.export_base_url}event/#{event.slug}"
-      f.print "LOCATION:#{event.conference_room}"
-      (@event_speakers[event.event_id] or []).each do |speaker|
-        f.print "ATTENDEE;ROLE=REQ-PARTICIPANT;CUTYPE=INDIVIDUAL;CN=\"#{speaker.name.namify}\":invalid:nomail"
-      end
-      f.print "END:VEVENT"
-    end #event
-    f.print "END:VCALENDAR"
-  end #f
-  $\ = eol
-end #ical
 
 exit 0
 
