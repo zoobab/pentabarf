@@ -382,6 +382,19 @@ begin
   end
 end
 
+@date_tracks = {}
+@date_track_name = {} # official name of the day
+begin
+  @events.group_by{|e| [e.start_datetime.strftime("%Y-%m-%d"), e.conference_track_id]}.each do |(date,tid), events|
+    if not @date_tracks.has_key? date
+      @date_tracks[date] = []
+      @date_track_name[date] = events[0].start_datetime.strftime('%A %F')
+    end
+    @date_tracks[date] << tid
+  end
+end
+
+
 def ical(calname, filename, events)
   eol = $\
   $\ = "\r\n"
@@ -429,6 +442,7 @@ end #ical
 #################################################################################################
 
 begin
+  puts "Rendering person pictures"
   images = Person_image.select({})
   images.each do |img|
     next unless img.public

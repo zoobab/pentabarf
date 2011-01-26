@@ -1,39 +1,84 @@
 xml.div(:id=>'track-index',:class=>'section') do
 
-  xml.p("In alphabetical order:")
+  #xml.p("In alphabetical order:")
 
   xml.table() do
-    xml.thead do
-      xml.th("track", {:colspan => 2})
-      xml.th("rooms(capacity)")
-    end
-    c = 0
+    d = 0
     xml.tbody do
-      @devroom_tracks.sort_by {|t| t.conference_track}.each do | track |
-        c += 1
-        trclass = (c%2 == 0) ? "even" : "odd"
-
-        xml.tr(:class => trclass) do
-          xml.td({:class => "track-#{track.conference_track.urlify}"}) do
-            xml << " "
+      @date_track_name.each do |date,date_name|
+        if d > 0 then
+          xml.tr(:class=>'separator') do
+            xml.td(:colspan=>3)
           end
-          xml.td() do
-            xml.a(track.conference_track,{:href=>url_for(:action=>:track, :track=>track.conference_track)})
-          end
+        end
+        d += 1
 
-          first = true
-          xml.td do
-            devroom_rooms = (@track_rooms[track.conference_track_id] or []).sort_by {|r| -r.size}.each do |r|
-              if not first then
-                xml << ", "
+        xml.tr({:class=>'schedule-day'}) do
+          xml.td(date_name, {:class=>'schedule-day-title', :colspan=>3})
+        end
+        xml.tr do
+          xml.th("Track", {:colspan => 2})
+          xml.th("Rooms (capacity)")
+        end #tr
+      
+        c = 0
+        day_tracks = @date_tracks[date]
+        @devroom_tracks.select{|t| day_tracks.include? t.conference_track_id}.sort_by{|t| t.conference_track}.each do | track |
+          c += 1
+          trclass = (c%2 == 0) ? "even" : "odd"
+
+          xml.tr(:class => trclass) do
+            xml.td({:class => "track-#{track.conference_track.urlify}"}) do
+              xml << " "
+            end
+            xml.td() do
+              xml.a(track.conference_track,{:href=>url_for(:action=>:track, :track=>track.conference_track)})
+            end
+
+            first = true
+            xml.td do
+              devroom_rooms = (@track_rooms[track.conference_track_id] or []).sort_by {|r| -r.size}.each do |r|
+                if not first then
+                  xml << ", "
+                end
+                xml.a("#{r.conference_room} (#{r.size})",{:href=>url_for(:action=>:room, :room=>r.conference_room)})
+                first = false
               end
-              xml.a("#{r.conference_room} (#{r.size})",{:href=>url_for(:action=>:room, :room=>r.conference_room)})
-              first = false
             end
           end
         end
       end
+      # show unscheduled devrooms?
+      all_devroom_tracks = @devroom_tracks.collect {|x| x.conference_track_id}
+      rest = all_devroom_tracks - @date_tracks.values.flatten
+      c = 0
+      rest.each do | tid |
+          if c == 0 then
+            xml.tr(:class=>'separator') do
+              xml.td(:colspan=>3)
+            end
+            xml.tr({:class=>'schedule-day'}) do
+              xml.td("Unscheduled", {:class=>'schedule-day-title', :colspan=>3})
+            end
+            xml.tr do
+              xml.th("Track", {:colspan => 2})
+              xml.th("")
+            end #tr
+          end
+          c += 1
+          track = @track_map[tid]
+
+          trclass = (c%2 == 0) ? "even" : "odd"
+          xml.tr(:class => trclass) do
+            xml.td({:class => "track-#{track.conference_track.urlify}"}) do
+              xml << " "
+            end
+            xml.td() do
+              xml.a(track.conference_track,{:href=>url_for(:action=>:track, :track=>track.conference_track)})
+            end
+            xml.td()
+          end
+      end
     end
   end
-
 end
