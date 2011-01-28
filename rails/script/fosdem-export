@@ -66,7 +66,7 @@ class String
     return self.gsub(/\s+(track|devroom)$/i, '')
   end
   def urlify
-    return URI.escape(self.downcase.gsub(/[\.&\?\+\*]/, '').gsub(/\s+/, '_').gsub(/'/, '_')).gsub(/%C3%AB/u, 'e').gsub(/%E4/u, 'a').gsub(/%C3%EA/u, 'a').gsub(/%AB/u, 'e').gsub(/%C3%98/u, 'O').gsub(/%C3%A5/u, 'a').gsub(/%C3%A9/u, 'e').gsub(/%C3%B8/u, 'oe').gsub(/%C5%A1/u, 's').gsub(/%C3%A6/u, 'ae').gsub(/%C3%B6/u, 'oe').gsub(/%C3%A8/u, 'e').gsub(/%C3%BC/u, 'ue').gsub(/%C3%A4/u, 'ae').gsub(/%C3%AA/u, 'e').gsub(/%C3%AC/u, 'i').gsub(/%C3%AD/u, 'i').gsub(/%C3%A7/u, 'c').gsub(/%C3%9F/u, 'ss').gsub(/'/, '').gsub(/%C3%A1/u, 'a').gsub(/%C3%B1/u, 'n').gsub(/%C3%BD/u, 'y').gsub(/%C3%B3/u, 'o').gsub(/%C3%BA/u, 'u')
+    return URI.escape(self.downcase.gsub(/[\.&\?\+\*]/, '').gsub(/\s+/, '_').gsub(/'/, '_')).gsub(/%C3%AB/u, 'e').gsub(/%E4/u, 'a').gsub(/%C3%EA/u, 'a').gsub(/%AB/u, 'e').gsub(/%C3%98/u, 'O').gsub(/%C3%A5/u, 'a').gsub(/%C3%A9/u, 'e').gsub(/%C3%B8/u, 'oe').gsub(/%C5%A1/u, 's').gsub(/%C3%A6/u, 'ae').gsub(/%C3%B6/u, 'oe').gsub(/%C3%A8/u, 'e').gsub(/%C3%BC/u, 'ue').gsub(/%C3%A4/u, 'ae').gsub(/%C3%AA/u, 'e').gsub(/%C3%AC/u, 'i').gsub(/%C3%AD/u, 'i').gsub(/%C3%A7/u, 'c').gsub(/%C3%9F/u, 'ss').gsub(/'/, '').gsub(/%C3%A1/u, 'a').gsub(/%C3%B1/u, 'n').gsub(/%C3%BD/u, 'y').gsub(/%C3%B3/u, 'o').gsub(/%C3%BA/u, 'u').gsub(/%C3%AF/u, 'i')
   end
   def nl2br
     return self.gsub(/\n/, "<br/>\n")
