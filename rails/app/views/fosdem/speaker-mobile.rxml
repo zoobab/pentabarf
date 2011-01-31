@@ -1,0 +1,68 @@
+speakers = (@event_speakers[@event.event_id] or [])
+xml << '<!DOCTYPE html>'
+xml.html do
+  xml.head do
+    xml.meta({:charset=>"utf-8"}) do
+    end #meta
+    xml.title(@speaker.name.namify)
+    xml.link({:rel=>'stylesheet', :href=>'http://code.jquery.com/mobile/1.0a2/jquery.mobile-1.0a2.min.css', :type=>'text/css'})
+    xml.script({:src=>'http://code.jquery.com/jquery-1.4.4.min.js'}) do
+    end
+    xml.script({:src=>'http://code.jquery.com/mobile/1.0a2/jquery.mobile-1.0a2.min.js'}) do
+    end
+  end #head
+
+  xml.body do
+    xml.div({'data-role'=>'page', :id=>'main'}) do
+      xml.div({'data-role'=>'header'}) do
+        xml.h1(@speaker.name.namify)
+      end #header
+      xml.div({'data-role'=>'content'}) do
+        xml.p do
+          xml.b do
+            xml << @speaker.name.namify
+          end
+        end #p
+
+        xml.div do
+          xml.p do
+            xml << markup(@speaker.abstract)
+          end #p
+          xml.p do
+            xml << markup(@speaker.description)
+          end #p
+        end #div
+
+        pic = load_person_image(@speaker.person_id, 180)
+        unless pic.nil? then
+          xml.p do
+            xml.img({:src=>pic})
+          end #p
+        end
+
+        links = Conference_person_link.select({:conference_person_id=>@speaker.conference_person_id})
+        unless links.empty? then
+          xml.ul({'data-role'=>'listview', 'data-inset'=>'true'}) do
+            xml.li("Links", {'data-role'=>'list-divider', :role=>'heading'})
+            links.each do |link|
+              xml.li do
+                xml.a(link.title ? link.title : link.url, {:href=>link.url, :rel=>'external'})
+              end #li
+            end #links
+          end #ul
+        end #empty
+
+        events = (@speaker_events[@speaker.person_id] or []).sort_by{|e| e.start_datetime}
+        unless events.empty? then
+          xml.ul({'data-role'=>'listview', 'data-inset'=>'true'}) do
+            xml.li("Events", {'data-role'=>'list-divider',:role=>'heading'})
+            events.each do |event|
+              mobile_event(xml, event, false, true)
+            end #event
+          end #ul
+        end #empty
+
+      end #content
+    end #page
+  end #body
+end #html

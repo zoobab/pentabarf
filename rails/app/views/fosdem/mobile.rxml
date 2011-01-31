@@ -1,0 +1,228 @@
+groups = [
+  [@main_tracks.sort_by{|t| t.rank}, 'Main Tracks', 'maintracks', true ],
+  [@devroom_tracks.sort_by{|t| t.conference_track}, 'Devroom Tracks', 'devrooms', true ]
+]
+extra = [
+  [ @lightning_talks, "Lightning Talks", "lt", true, false ],
+  [ @cert_exams, "Certifications", "cert", false, true ]
+]
+
+def _track(x, elist, title, id, with_split, with_speakers, with_room)
+  eh = with_split ? elist.group_by{|e| e.start_datetime.to_date} : {0 => elist}
+
+  eh.each do |d,events|
+    xid = (d.is_a? Date) ? "#{id}-#{d.strftime("%a").downcase}" : id
+    xtitle = (d.is_a? Date) ? "#{title} (#{d.strftime("%A")})" : title
+    x.div({'data-role'=>'page', :id=>xid}) do
+      x.div({'data-role'=>'header'}) do
+        x.h1(xtitle)
+      end #header
+      x.div({'data-role'=>'content'}) do
+        x.ul({'data-role'=>'listview', 'data-filter'=>'true'}) do
+          rooms = events.collect{|e| e.conference_room}.sort.uniq
+          if not rooms.empty? then
+            x.li(rooms.length > 1 ? "Rooms" : "Room", {'data-role'=>'list-divider'})
+            rooms.each do |room|
+              x.li do
+                x.a(room, {:href=>"#room-#{room.urlify}"})
+              end #li
+            end #rooms
+          end #rooms.empty
+          x.li("Sessions", {'data-role'=>'list-divider'}) unless not with_split
+          day_event_hash = with_split ? {0 => events} : events.group_by{|e| e.start_datetime.to_date}
+          day_event_hash.sort_by{|d,e| d}.each do |day, dayevents|
+            x.li(day.strftime("%A %Y-%m-%d"), {'data-role'=>'list-divider'}) if day.is_a? Date
+            raise "dayevents is Nil for day=#{day.inspect}" if dayevents.nil?
+            dayevents.sort_by{|e| e.start_time}.each do |event|
+              mobile_event(x, event, with_speakers, with_room)
+            end #dayevents
+          end #dh
+        end #ul
+      end #content
+    end #page
+  end #eh.each
+end #_track
+
+def _track2(xml, events, title, id, with_speakers, with_room)
+  # skip tracks that don't have any talks
+  next if events.empty?
+
+  # when the track has talks over more than one day,
+  # AND when each day would have more than 3 talks,
+  # use an intermediary page that splits into each day
+  h = events.group_by{|e| e.start_datetime.to_date}
+  if h.keys.length > 1 and h.collect{|d,e| e.length > 3}.reduce{|a,b| a and b} then
+    # more than one day => intermediary page
+    xml.div({'data-role'=>'page', :id=>id}) do
+      xml.div({'data-role'=>'header'}) do
+        xml.h1(title)
+      end #header
+      xml.div({'data-role'=>'content'}) do
+        xml.ul({'data-role'=>'listview'}) do
+          # now make a link to a per-day event list
+          h.sort_by {|d,e| d}.each do |day, dayevents|
+            xml.li do
+              xml.a(day.strftime("%A"), {:href=>"#{id}-#{day.strftime("%a").downcase}"})
+              xml.span(dayevents.length, {:class=>'ui-li-count'})
+            end #li
+          end #h.each
+        end #ul
+      end #content
+    end #page
+
+    # now, for each day, make a detail page with the events
+    h.each do |day, dayevents|
+      _track(xml, dayevents, "#{title} (#{day.strftime("%a").capitalize})", "#{id}-#{day.strftime("%a").downcase}", false, with_speakers, with_room)
+    end #h.each
+  else
+    # only one day => no intermediary page
+    _track(xml, events, title, id, false, with_speakers, with_room)
+  end #if more than one day
+end #_track2
+
+def _track3(xml, track, with_speakers, with_room)
+  events = (@events_by_track[track.conference_track_id] or [])
+  _track2(xml, events, track.conference_track, "track-#{track.conference_track.urlify}", with_speakers, with_room)
+end #_track3
+
+xml << '<!DOCTYPE html>'
+xml.html do
+  xml.head do
+    xml.meta({:charset=>"utf-8"}) do
+    end #meta
+    xml.title('FOSDEM Schedule')
+    xml.link({:rel=>'stylesheet', :href=>'http://code.jquery.com/mobile/1.0a2/jquery.mobile-1.0a2.min.css', :type=>'text/css'})
+    xml.script({:src=>'http://code.jquery.com/jquery-1.4.4.min.js'}) do
+    end
+    xml.script({:src=>'http://code.jquery.com/mobile/1.0a2/jquery.mobile-1.0a2.min.js'}) do
+    end
+    xml.style({:type=>"text/css"}) do
+      xml << ".time { font-family: monospace; }"
+      xml << ".room-on-map { margin-bottom: 1em; }"
+    end
+  end #head
+
+  xml.body do
+    xml.div({'data-role'=>'page', :id=>'main'}) do
+      xml.div({'data-role'=>'header'}) do
+        xml.h1('FOSDEM 2011 Schedule')
+      end #header
+      xml.div({'data-role'=>'content'}) do
+        xml.ul({'data-role'=>'listview'}) do
+          groups.each do |tracks, title, id|
+            xml.li do
+              xml.a(title, {:href=>'#'+id})
+              xml.span(tracks.length, {:class=>'ui-li-count'})
+            end #li
+          end #groups
+          extra.each do |events, title, id, with_speakers, with_rooms|
+            xml.li do
+              xml.a(title, {:href=>'#'+id})
+              xml.span(events.length, {:class=>'ui-li-count'})
+            end #li
+          end #extra
+          xml.li do
+            xml.a("Rooms", {:href=>'#rooms'})
+            xml.span(@rooms.length, {:class=>'ui-li-count'})
+          end #li
+        end #ul
+      end #content
+    end #main
+
+    extra.each do |elist, title, id, with_speakers, with_room|
+      _track2(xml, elist, title, id, with_speakers, with_room)
+    end #extra
+
+    ###
+    ### track group pages (lists of tracks)
+    ###
+    groups.each do |tracks, title, id, with_room|
+      xml.div({'data-role'=>'page', :id=>id}) do
+        xml.div({'data-role'=>'header'}) do
+          xml.h1(title)
+        end #header
+        xml.div({'data-role'=>'content'}) do
+          xml.ul({'data-role'=>'listview', 'data-filter'=>'true'}) do
+            #xml.li(title, {'data-role'=>'list-divider'})
+            tracks.each do |track|
+              events = (@events_by_track[track.conference_track_id] or [])
+              xml.li do
+                if events.empty? then
+                  # for tracks without schedules events, don't make a link
+                  # to the detail page
+                  xml << track.conference_track.shorttrack
+                else
+                  xml.a(track.conference_track.shorttrack, {:href=>"track-#{track.conference_track.urlify}"})
+                end
+                xml.span(events.length, {:class=>'ui-li-count'})
+              end #li
+            end #tracks
+          end #ul
+        end #content
+      end #page
+    end #groups
+
+    ###
+    ### individual track pages (events in each track)
+    ###
+    groups.each do |tracks, title, id, with_room|
+      tracks.each do |track|
+        _track3(xml, track, true, with_room)
+      end #tracks
+    end #groups
+
+    xml.div({'data-role'=>'page', :id=>'rooms'}) do
+      xml.div({'data-role'=>'header'}) do
+        xml.h1('Rooms')
+      end #header
+      xml.div({'data-role'=>'content'}) do
+        xml.ul({'data-role'=>'listview', 'data-filter'=>'true'}) do
+          @rooms.sort_by{|r| [r.rank, -r.size]}.each do |room|
+            room_events = (@room_events[room.conference_room_id] or [])
+            next if room_events.empty?
+            xml.li do
+              xml.a(room.conference_room, {:href=>'#room-'+room.conference_room.urlify})
+              xml.span(room_events.length, {:class=>'ui-li-count'})
+            end #li
+          end #@rooms
+        end #ul
+      end #content
+    end #page
+
+    @rooms.each do |room|
+      room_events = (@room_events[room.conference_room_id] or [])
+      next if room_events.empty?
+      xml.div({'data-role'=>'page', :id=>"room-#{room.conference_room.urlify}"}) do
+        xml.div({'data-role'=>'header'}) do
+          xml.h1(room.conference_room)
+        end #header
+        xml.div({'data-role'=>'content'}) do
+          room_data_small = load_room_image("thumbs/#{room.conference_room.urlify}")
+          #xml.img({:src=>"http://fosdem.org/2011/map/room/#{room.conference_room.urlify}/small",:class=>'room-on-map'})
+          xml.img({:src=>room_data_small,:class=>'room-on-map'})
+          rg = @room_geo[room.conference_room.urlify]
+          unless rg.nil? then
+            xml.p do
+              xml << "Geo: "
+              xml.span({:class=>'geo'}) do
+                xml.span(rg[0], {:class=>'latitude'})
+                xml << ";"
+                xml.span(rg[1], {:class=>'longitude'})
+              end #geo
+            end #p
+          end #rg.nil
+          xml.ul({'data-role'=>'listview'}) do
+            room_events.group_by{|e| e.start_datetime.to_date}.sort_by{|d,e| d}.each do |day,dayevents|
+              next if dayevents.empty?
+              xml.li(day.strftime("%A %Y-%m-%d"), {'data-role'=>'list-divider'});
+              dayevents.sort_by{|e| e.start_time}.each do |event|
+                mobile_event(xml, event, true, false)
+              end #dayevents
+            end #events
+          end #ul
+        end #content
+      end #page
+    end #@rooms
+
+  end #body
+end #html

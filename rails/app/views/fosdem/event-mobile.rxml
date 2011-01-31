@@ -1,0 +1,78 @@
+speakers = (@event_speakers[@event.event_id] or [])
+xml << '<!DOCTYPE html>'
+xml.html do
+  xml.head do
+    xml.meta({:charset=>"utf-8"}) do
+    end #meta
+    xml.title("FOSDEM: #{@event.title}")
+    xml.link({:rel=>'stylesheet', :href=>'http://code.jquery.com/mobile/1.0a2/jquery.mobile-1.0a2.min.css', :type=>'text/css'})
+    xml.script({:src=>'http://code.jquery.com/jquery-1.4.4.min.js'}) do
+    end
+    xml.script({:src=>'http://code.jquery.com/mobile/1.0a2/jquery.mobile-1.0a2.min.js'}) do
+    end
+    xml.style({:type=>"text/rss"}) do
+      xml << "th { text-align: right; }\n"
+      xml << ".keyword { text-align: right; font-weight: bold; }\n"
+    end
+  end #head
+
+  xml.body do
+    xml.div({'data-role'=>'page', :id=>'main'}) do
+      xml.div({'data-role'=>'header'}) do
+        xml.h1("#{@event.title}")
+        xml.h2("#{@event.subtitle}") unless @event.subtitle.nil? or @event.subtitle.empty?
+      end #header
+      xml.div({'data-role'=>'content'}) do
+        xml.p do
+          xml.b do
+            xml << @event.title
+          end
+          unless @event.subtitle.nil? or @event.subtitle.empty? then
+            xml.br
+            xml.b do
+              xml << @event.subtitle
+            end
+          end
+        end #p
+        xml.p do
+          xml << "#{@event.start_datetime.strftime("%A %H:%M")} - #{(@event.start_datetime + @event.duration).strftime("%H:%M")} in #{@event.conference_room} (#{@room_map[@event.conference_room_id].size} seats)"
+          xml.br
+          xml << "Track: #{@event.conference_track}"
+        end #p
+
+        xml.div({'data-role'=>'collapsible'}) do
+          xml.h3("Abstract", {:role=>"heading"})
+          xml << markup(@event.abstract)
+          xml << markup(@event.description)
+        end
+
+        xml.ul({'data-role'=>'listview', 'data-inset'=>'true'}) do
+          xml.li(speakers.length > 1 ? "Speakers" : "Speaker", {'data-role'=>'list-divider', :role=>'heading'})
+          speakers.each do |s|
+            xml.li do
+              xml.a(s.name.namify, {:href=>"#{@mobile_base_url}speaker/#{s.name.urlify}"})
+            end #li
+          end #speakers
+        end #ul
+
+        [
+          ['sametime', 'Concurrent events', lambda {|e| event_sametime(e, @event) }, (0 .. -1), true],
+          ['sameroom', "Next (up to 3) in (#{@event.conference_room})", lambda {|e| event_next_in_room(e, @event) }, (0 .. 2), false],
+          ['upcoming', 'After this one (within 30 min)', lambda {|e| event_is_upcoming_to(e, @event, 30.minutes) }, (0 .. -1), true]
+        ].each do |css, heading, selector, slicer, with_room|
+          event_list = @events.select{|e| e.event_id != @event.event_id and selector.call(e) }.sort_by{|e| [e.start_time,((e.conference_room_id==@event.conference_room_id)? -1 : 1),e.duration]}.slice(slicer)
+          next if event_list.empty?
+          xml.div({'data-role'=>'collapsible', 'data-collapsed'=>'true'}) do
+            xml.h3(heading)
+            xml.ul({'data-role'=>'listview', 'data-inset'=>'true'}) do
+              event_list.each do |event|
+                mobile_event(xml, event, true, with_room)
+              end #each
+            end #ul
+          end #div
+        end #each
+
+      end #content
+    end #page
+  end #body
+end #html

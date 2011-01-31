@@ -9,6 +9,36 @@ include ApplicationHelper
 require 'ftools'
 require 'set'
 require 'RMagick'
+require 'base64'
+
+@export_sql = false
+
+# keep it here until it's stored in Pentabarf:
+# (hash values are [ lat, long ])
+# use this: http://www.europe-camping-guide.com/get-longitude-latitude-google-maps/
+@room_geo = {
+  'h2214'      => [ '50.81290582134759', '4.3803611397743225' ],
+  'janson'     => [ '50.81325663668648', '4.37966912984848' ],
+  'chavanne'   => [ '50.81254991903593', '4.382069706916809' ],
+  'ferrer'     => [ '50.812883789378475', '4.380328953266144' ],
+  'lameere'    => [ '50.812039787659984', '4.382337927818298' ],
+  'h3227'      => [ '50.81291937947728', '4.380280673503876' ],
+  'h1301'      => [ '50.81264313180825', '4.379730820655823' ],
+  'h1302'      => [ '50.812687195963115', '4.379897117614746' ],
+  'h1308'      => [ '50.81273295484919', '4.380033910274506' ],
+  'h1309'      => [ '50.81276854506295', '4.380189478397369' ],
+  'h2213'      => [ '50.81287362077382', '4.380377233028412' ],
+  'guillissen' => [ '50.81176522959664', '4.382879734039307' ],
+  'ua2114'     => [ '50.81176522959664', '4.383099675178528' ],
+  'aw1105'     => [ '50.81203809286208', '4.380693733692169' ],
+  'aw1115'     => [ '50.81224485775319', '4.3805475533008575' ],
+  'aw1117'     => [ '50.81227112699761', '4.380617290735245' ],
+  'aw1120'     => [ '50.812303327986754', '4.380767494440079' ],
+  'aw1121'     => [ '50.81227960094425', '4.3808358907699585' ],
+  'aw1124'     => [ '50.812201640577015', '4.38085600733757' ],
+  'aw1125'     => [ '50.81213639103922', '4.380936473608017' ],
+  'aw1126'     => [ '50.812161812947906', '4.380939155817032' ],
+}
 
 @lang = 'en'
 @language = 'English'
@@ -18,6 +48,12 @@ require 'RMagick'
 @output_dir = "#{@here}/tmp/fosdem-export/#{@conference.acronym}"
 @grid_max_columns = 7
 @grid_max_title_length = 25
+@mobile_base_url = 'http://m.fosdem.org/'
+#begin
+  #u = URI.parse(@conference.export_base_url)
+  #u.path = u.path.split('/').slice((0..-2)).join('/') + '/mobile/'
+  #@mobile_base_url = u.to_s
+#end
 
 IMAGE_SIZES = [22,32,48,128]
 
@@ -66,7 +102,10 @@ class String
     return self.gsub(/\s+(track|devroom)$/i, '')
   end
   def urlify
-    return URI.escape(self.downcase.gsub(/[\.&\?\+\*]/, '').gsub(/\s+/, '_').gsub(/'/, '_')).gsub(/%C3%AB/u, 'e').gsub(/%E4/u, 'a').gsub(/%C3%EA/u, 'a').gsub(/%AB/u, 'e').gsub(/%C3%98/u, 'O').gsub(/%C3%A5/u, 'a').gsub(/%C3%A9/u, 'e').gsub(/%C3%B8/u, 'oe').gsub(/%C5%A1/u, 's').gsub(/%C3%A6/u, 'ae').gsub(/%C3%B6/u, 'oe').gsub(/%C3%A8/u, 'e').gsub(/%C3%BC/u, 'ue').gsub(/%C3%A4/u, 'ae').gsub(/%C3%AA/u, 'e').gsub(/%C3%AC/u, 'i').gsub(/%C3%AD/u, 'i').gsub(/%C3%A7/u, 'c').gsub(/%C3%9F/u, 'ss').gsub(/'/, '').gsub(/%C3%A1/u, 'a').gsub(/%C3%B1/u, 'n').gsub(/%C3%BD/u, 'y').gsub(/%C3%B3/u, 'o').gsub(/%C3%BA/u, 'u').gsub(/%C3%AF/u, 'i')
+    return URI.escape(self.downcase.gsub(/[\.&\?\+\*\/]/, '').gsub(/\s+/, '_').gsub(/'/, '_')).gsub(/%C3%AB/u, 'e').gsub(/%E4/u, 'a').gsub(/%C3%EA/u, 'a').gsub(/%AB/u, 'e').gsub(/%C3%98/u, 'O').gsub(/%C3%A5/u, 'a').gsub(/%C3%A9/u, 'e').gsub(/%C3%B8/u, 'oe').gsub(/%C5%A1/u, 's').gsub(/%C3%A6/u, 'ae').gsub(/%C3%B6/u, 'oe').gsub(/%C3%A8/u, 'e').gsub(/%C3%BC/u, 'ue').gsub(/%C3%A4/u, 'ae').gsub(/%C3%AA/u, 'e').gsub(/%C3%AC/u, 'i').gsub(/%C3%AD/u, 'i').gsub(/%C3%A7/u, 'c').gsub(/%C3%9F/u, 'ss').gsub(/'/, '').gsub(/%C3%A1/u, 'a').gsub(/%C3%B1/u, 'n').gsub(/%C3%BD/u, 'y').gsub(/%C3%B3/u, 'o').gsub(/%C3%BA/u, 'u').gsub(/%C3%AF/u, 'i')
+  end
+  def sqlify
+    return "'" + self.gsub(/'/, "''").gsub(/\\/, '\&\&') + "'"
   end
   def nl2br
     return self.gsub(/\n/, "<br/>\n")
@@ -75,6 +114,34 @@ end
 
 def h(str)
   return str
+end
+
+def mobile_event(x, event, with_speakers, with_room)
+  x.li do
+    x.span("#{event.start_time.strftime("%H:%M")}-#{(event.start_time+event.duration).strftime("%H:%M")}", {:class=>"time"})
+    x.span(" (#{event.conference_room})", {:class=>"room"}) if with_room
+    x.br
+    x.a(event.title, {:href=>"#{@mobile_base_url}event/#{event.slug.urlify}",:class=>"title"})
+    speakers = (@event_speakers[event.event_id] or [])
+    if with_speakers and not speakers.empty? then
+      x.br
+      x << speakers.collect{|s| s.name.shortnamify}.join(", ")
+    end #if
+  end #li
+end #_event
+
+def load_room_image(room)
+  file = File.open(@template_prefix + "rooms/#{room}.png", "rb")
+  content = file.read
+  file.close
+  return "data:image/png;base64," + Base64.encode64(content)
+end
+
+def load_person_image(person_id, size)
+  img = Person_image.select({:person_id=>person_id})
+  return nil if img.nil? or img.empty?
+  img = img[0]
+  return "data:#{img.mime_type};base64," + Base64.encode64(resize_image(img.image, size, img.mime_type))
 end
 
 def write_file( filename, content )
@@ -144,7 +211,7 @@ def url_for(url)
       case url[:action]
         when :index then ""
         when :day then "day/#{url[:id].downcase}"
-        when :event then "event/#{url[:slug]}"
+        when :event then "event/#{url[:slug].urlify}"
         when :event_attachment then "attachments/#{url[:event_attachment_id]}#{url[:filename].to_s.length > 0 ? '_' + url[:filename] : ''}"
         when :events then "events.#{url[:language]}.html"
         when :track_event then "track/#{url[:track]}/#{url[:id]}.#{url[:language]}.html"
@@ -200,6 +267,14 @@ end
 current_url = {:controller=>'schedule',:action=>:index,:language=>'en',:conference_id=>@conference.conference_id}
 
 @template_prefix = @here + '/' + File.dirname(__FILE__) + '/../app/views/fosdem/'
+
+def mkfile(f)
+  o = @output_dir + '/' + f
+  d = File.dirname(o)
+  File.makedirs(d) #unless File.directory? d
+  puts "Rendering #{o}"
+  yield File.open(o, File::CREAT|File::WRONLY|File::TRUNC)
+end
 
 def rxml(template_filename, wrap_with_div=true)
   f = @template_prefix + template_filename + '.rxml'
@@ -257,6 +332,17 @@ def is_lightning_talk(t)
   end
 end
 
+def is_cert_exam(t)
+  raise "t is nil" if t.nil?
+  if (t.is_a? String) then
+    return (t =~ /^certifications?$/i) ? true : false
+  else
+    raise "#{t.class} (#{t.inspect}) does not have a conference_track method" unless t.respond_to?(:conference_track)
+    return is_cert_exam(t.conference_track)
+  end
+end
+
+
 #################################################################################################################
 
 # make some output directories
@@ -268,6 +354,8 @@ end
 @track_map = {}
 @main_tracks = []
 @devroom_tracks = []
+@lightning_talks = []
+@cert_exams = []
 begin
   tracks = Conference_track.select({:conference_id=>@conference.conference_id})
   tracks.each do |t|
@@ -310,7 +398,7 @@ end
 @events = []
 @event_map = {}
 @speaker_events = {}
-@main_track_events_by_track = nil
+@events_by_track = {}
 begin
   events = View_schedule_event_fosdem.select({:translated=>@lang, :conference_id=>@conference.conference_id},{:order=>[:title,:subtitle]})
   events.each do |e|
@@ -322,6 +410,10 @@ begin
         @speaker_events[person.person_id] << e
       end
     end
+    @events_by_track[e.conference_track_id] = [] unless @events_by_track.has_key? e.conference_track_id
+    @events_by_track[e.conference_track_id] << e
+    @lightning_talks << e if is_lightning_talk(e)
+    @cert_exams << e if is_cert_exam(e)
   end
 end
 
@@ -427,7 +519,7 @@ def ical(calname, filename, events)
       f.print "CLASS:PUBLIC"
       f.print "STATUS:CONFIRMED"
       f.print "CATEGORIES:#{event.conference_track}"
-      f.print "URL:#{@conference.export_base_url}event/#{event.slug}"
+      f.print "URL:#{@conference.export_base_url}event/#{event.slug.urlify}"
       f.print "LOCATION:#{event.conference_room}"
       (@event_speakers[event.event_id] or []).each do |speaker|
         f.print "ATTENDEE;ROLE=REQ-PARTICIPANT;CUTYPE=INDIVIDUAL;CN=\"#{speaker.name.namify}\":invalid:nomail"
@@ -441,6 +533,51 @@ end #ical
 
 #################################################################################################
 
+if @export_sql then
+  mkfile 'schedule.sql' do |f|
+    f.puts """
+DROP TABLE IF EXISTS schedule;
+CREATE TABLE schedule (
+  t           ENUM('event', 'speaker') NOT NULL,
+  url         VARCHAR(1024) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL,
+  title       TEXT CHARACTER SET utf8 NOT NULL,
+  subtitle    TEXT CHARACTER SET utf8 NULL,
+  abstract    TEXT CHARACTER SET utf8 NULL,
+  description TEXT CHARACTER SET utf8 NULL,
+  FULLTEXT (title,subtitle,abstract,description)
+) TYPE=MyISAM;
+
+"""
+
+    def s(o)
+      return "NULL" if o.nil? or o.empty?
+      return o.sqlify.strip
+    end #s
+
+    @events.each do |event|
+      f.puts "INSERT INTO schedule(t,url,title,subtitle,abstract,description) VALUES('event', #{event.slug.urlify.sqlify}, #{event.title.sqlify}, #{s(event.subtitle)}, #{s(event.abstract)}, #{s(event.description)});"
+    end #@events
+    f.puts
+    @speakers.each do |speaker|
+      f.puts "INSERT INTO schedule(t,url,title,subtitle,abstract,description) VALUES('speaker', #{speaker.name.urlify.sqlify}, #{speaker.name.namify.sqlify}, NULL, #{s(speaker.abstract)}, #{s(speaker.description)});"
+    end #@speakers
+  end #f
+  exit 0 if ENV.has_key? 'ONLYSQL'
+end
+
+begin
+  rxmlfile('mobile', 'mobile', false)
+  @events.each do |event|
+    @event = event
+    rxmlfile('event-mobile', "mobile/event/#{event.slug.urlify}", false)
+  end
+  @speakers.each do |speaker|
+    @speaker = speaker
+    rxmlfile('speaker-mobile', "mobile/speaker/#{speaker.name.urlify}", false)
+  end
+end
+exit 0 if ENV.has_key? 'ONLYMOBILE'
+
 begin
   puts "Rendering person pictures"
   images = Person_image.select({})
@@ -452,8 +589,8 @@ begin
     IMAGE_SIZES.each do |size|
       ext = mime_to_ext(img.mime_type)
       f = "images/speaker/#{speaker.name.urlify}-#{size}x#{size}.#{ext}"
-      #puts "Rendering image #{f}"
-      write_file(f, resize_image(img.image, size, img.mime_type)) #'PNG'))
+      #puts "rendering image #{f}"
+      write_file(f, resize_image(img.image, size, img.mime_type)) #'png'))
     end
   end
 end
@@ -467,7 +604,7 @@ begin
   end
   ical("#{@conference.acronym}", "schedule.#{@lang}.ics", @events)
   @tracks.each do |track|
-    track_events = @events.select{|e| e.conference_track_id == track.conference_track_id}
+    track_events = (@events_by_track[track.conference_track_id] or [])
     ical("#{@conference.acronym} (#{track.conference_track})", "track/#{track.conference_track.urlify}.ics", track_events)
     @xcal_events = track_events
     @xcal_cal = "#{@conference.acronym} (#{track.conference_track})"
@@ -501,7 +638,7 @@ end
 begin
   @events.each do |event|
     @event = event
-    rxmlfile('event', "event/#{event.slug}")
+    rxmlfile('event', "event/#{event.slug.urlify}")
   end
 end
 
@@ -509,7 +646,7 @@ begin
   @no_speaker_image = true
   @tracks.each do |track|
     @track = track
-    @track_events = @events.select {|e| e.conference_track_id == track.conference_track_id}
+    @track_events = (@events_by_track[track.conference_track_id] or [])
     rxmlfile('track', "track/#{@track.conference_track.urlify}")
   end
 end
@@ -521,7 +658,7 @@ begin
   end
 end
 
-File.open("includes/maps.php", File::CREAT|File::WRONLY|File::TRUNC) do |f|
+mkfile 'includes/maps.php' do |f|
   f.puts "<?php"
   f.puts '$PENTABARF_EVENT_TITLE_BY_URL = array();'
   f.puts '$PENTABARF_EVENT_ID_BY_URL    = array();'
@@ -529,6 +666,7 @@ File.open("includes/maps.php", File::CREAT|File::WRONLY|File::TRUNC) do |f|
   f.puts '$PENTABARF_PERSON_ID_BY_URL   = array();'
   f.puts '$PENTABARF_TRACK_NAME_BY_URL  = array();'
   f.puts '$PENTABARF_ROOM_NAME_BY_URL   = array();'
+  f.puts '$PENTABARF_ROOM_GEO_BY_URL    = array();'
   f.puts '$PENTABARF_DAY_NAME_BY_ID     = array();'
   f.puts '$PENTABARF_DAY_NAME_BY_URL    = array();'
   f.puts '$PENTABARF_DAY_ID_BY_URL      = array();'
@@ -536,8 +674,8 @@ File.open("includes/maps.php", File::CREAT|File::WRONLY|File::TRUNC) do |f|
 
   @events.each do |e|
     raise "slug is nil for event #{e.title} (#{e.event_id})" if e.slug.nil?
-    f.puts "$PENTABARF_EVENT_TITLE_BY_URL[#{e.slug.php}] = #{e.title.php};"
-    f.puts "$PENTABARF_EVENT_ID_BY_URL[#{e.slug.php}] = #{e.event_id};"
+    f.puts "$PENTABARF_EVENT_TITLE_BY_URL[#{e.slug.urlify.php}] = #{e.title.php};"
+    f.puts "$PENTABARF_EVENT_ID_BY_URL[#{e.slug.urlify.php}] = #{e.event_id};"
   end
   f.puts
   @speakers.each do |s|
@@ -551,6 +689,12 @@ File.open("includes/maps.php", File::CREAT|File::WRONLY|File::TRUNC) do |f|
   @rooms.each do |r|
     f.puts "$PENTABARF_ROOM_NAME_BY_URL[#{r.conference_room.urlify.php}] = #{r.conference_room.php};"
   end
+  @rooms.each do |r|
+    geo = @room_geo[r.conference_room.urlify]
+    unless geo.nil? then
+      f.puts "$PENTABARF_ROOM_GEO_BY_URL[#{r.conference_room.urlify.php}] = array(#{geo[0].php}, #{geo[1].php});"
+    end
+  end #rooms
   begin
     first_day = @events.map{|e| e.start_datetime.to_date}.min
     @events.map{|e| e.start_datetime.to_date}.uniq.sort.each do |d|
