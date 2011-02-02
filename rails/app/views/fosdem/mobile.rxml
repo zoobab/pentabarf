@@ -85,11 +85,10 @@ def _track3(xml, track, with_speakers, with_room)
   _track2(xml, events, track.conference_track, "track-#{track.conference_track.urlify}", with_speakers, with_room)
 end #_track3
 
-xml << '<!DOCTYPE html>'
+xml << "<!DOCTYPE html>\n"
 xml.html do
   xml.head do
-    xml.meta({:charset=>"utf-8"}) do
-    end #meta
+    xml << "<meta charset=\"utf-8\"></meta>\n"
     xml.title('FOSDEM Schedule')
     xml.link({:rel=>'stylesheet', :href=>'http://code.jquery.com/mobile/1.0a2/jquery.mobile-1.0a2.min.css', :type=>'text/css'})
     xml.script({:src=>'http://code.jquery.com/jquery-1.4.4.min.js'}) do
