@@ -486,7 +486,6 @@ begin
   end
 end
 
-
 def ical(calname, filename, events)
   eol = $\
   $\ = "\r\n"
@@ -532,6 +531,27 @@ def ical(calname, filename, events)
 end #ical
 
 #################################################################################################
+
+begin
+  @rooms.each do |@room|
+    roomevents = @events.select{|e| e.conference_room_id==@room.conference_room_id}
+    next if roomevents.empty?
+    roomevents.group_by{|e| e.start_datetime.to_date}.each do |@day, @roomevents|
+      rxmlfile('odf', "odf/#{@room.conference_room.urlify}-#{@day.strftime("%a").downcase}.xml", false)
+    end
+  end
+
+  #@tracks.each do |track|
+  #  @track = track
+  #  (@events_by_track[track.conference_track_id] or []).group_by{|e| e.start_datetime.to_date}.each do |@day, elist|
+  #    elist.group_by{|e| e.conference_room_id}.each do |rid, @dayevents|
+  #      @room = @room_map[rid]
+  #      rxmlfile('odf', "odf/#{track.conference_track.urlify}-#{@room.conference_room.urlify}-#{@day.strftime("%a").downcase}.xml", false)
+  #    end
+  #  end
+  #end
+  exit 0 if ENV.has_key? 'ONLYODF'
+end
 
 if @export_sql then
   mkfile 'schedule.sql' do |f|
