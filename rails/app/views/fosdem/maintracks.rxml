@@ -34,6 +34,8 @@ xml.div(:id=>'maintracks-index',:class=>'section event-index') do
               end
             end
             xml.td(:class=>"speakers speakers-photo") do
+              raise "event.event_id is nil" if event.event_id.nil?
+              raise "event without speakers: #{event.event_id}" unless @event_speakers.has_key? event.event_id
               @event_speakers[event.event_id].each do |speaker|
                 xml.a(:href=>url_for(:action=>:speaker,:name=>speaker.name)) do
                   xml.img(:class=>'speaker-image',:src=>speaker_image(speaker.person_id, 22)) if speaker_has_image(speaker.person_id)

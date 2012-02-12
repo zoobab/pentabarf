@@ -10,8 +10,31 @@ require 'ftools'
 require 'set'
 require 'RMagick'
 require 'base64'
+require 'progressbar'
 
-@export_sql = false
+@lang = 'en'
+@language = 'English'
+@here = Dir.pwd
+@timezone = 'Europe/Brussels'
+output_dir_base = "#{@here}/tmp/fosdem-export"
+@grid_max_columns = 7
+@grid_max_title_length = 25
+@mobile_base_url = 'https://m.fosdem.org/'
+@only_rooms = []
+
+export_odf = false
+export_sql = false
+export_mobile = export_schedule = export_xml = export_xcal = export_php = true
+
+if ENV.has_key? 'OUTPUT_DIR' then
+  output_dir_base = ENV['OUTPUT_DIR']
+end
+if ENV.has_key? 'ONLY_XML' then
+  export_mobile = export_schedule = export_xcal = export_php = false
+end
+if ENV.has_key? 'ONLY_ROOMS' then
+  @only_rooms = ENV['ONLY_ROOMS'].split(/\s+/)
+end
 
 # keep it here until it's stored in Pentabarf:
 # (hash values are [ lat, long ])
@@ -40,26 +63,32 @@ require 'base64'
   'aw1126'     => [ '50.812161812947906', '4.380939155817032' ],
 }
 
-@lang = 'en'
-@language = 'English'
-@here = Dir.pwd
-@timezone = 'Europe/Brussels'
-@conference = Conference.select_single(:acronym=>ARGV[0])
-@output_dir = "#{@here}/tmp/fosdem-export/#{@conference.acronym}"
-@grid_max_columns = 7
-@grid_max_title_length = 25
-@mobile_base_url = 'http://m.fosdem.org/'
-#begin
-  #u = URI.parse(@conference.export_base_url)
-  #u.path = u.path.split('/').slice((0..-2)).join('/') + '/mobile/'
-  #@mobile_base_url = u.to_s
-#end
+@c = nil
+case ARGV.length
+when 1
+  @c = ARGV[0]
+when 0
+  if ENV.has_key? 'FOSDEM_CONF' then
+    @c = ENV['FOSDEM_CONF']
+  else
+    puts "Must specify the acronym of the conference as first parameter !"
+    puts "Here is the list of available acronyms:"
+    Conference.select.sort_by{|r| r.acronym}.each do |r|
+      puts "\t#{r.acronym}"
+    end
+    puts "Please run this script again and specify the acronym of the conference"
+    puts "you would like to export as first parameter."
+    exit 1
+  end
+else
+  raise "too many parameters, only supports one (the acronym of the conference)"
+end
+
+@conference = Conference.select_single(:acronym=>@c)
+@confname = @conference.title
+@output_dir = "#{output_dir_base}/#{@conference.acronym}"
 
 IMAGE_SIZES = [22,32,48,128]
-
-#languages = View_conference_language.select(:conference_id=>@conference.conference_id,:translated=>'en')
-#languages = languages.map(&:language)
-#languages << 'en' if languages.length < 1
 
 File.umask(0002)
 
@@ -102,7 +131,7 @@ class String
     return self.gsub(/\s+(track|devroom)$/i, '')
   end
   def urlify
-    return URI.escape(self.downcase.gsub(/[\.&\?\+\*\/]/, '').gsub(/\s+/, '_').gsub(/'/, '_')).gsub(/%C3%AB/u, 'e').gsub(/%E4/u, 'a').gsub(/%C3%EA/u, 'a').gsub(/%AB/u, 'e').gsub(/%C3%98/u, 'O').gsub(/%C3%A5/u, 'a').gsub(/%C3%A9/u, 'e').gsub(/%C3%B8/u, 'oe').gsub(/%C5%A1/u, 's').gsub(/%C3%A6/u, 'ae').gsub(/%C3%B6/u, 'oe').gsub(/%C3%A8/u, 'e').gsub(/%C3%BC/u, 'ue').gsub(/%C3%A4/u, 'ae').gsub(/%C3%AA/u, 'e').gsub(/%C3%AC/u, 'i').gsub(/%C3%AD/u, 'i').gsub(/%C3%A7/u, 'c').gsub(/%C3%9F/u, 'ss').gsub(/'/, '').gsub(/%C3%A1/u, 'a').gsub(/%C3%B1/u, 'n').gsub(/%C3%BD/u, 'y').gsub(/%C3%B3/u, 'o').gsub(/%C3%BA/u, 'u').gsub(/%C3%AF/u, 'i')
+    return URI.escape(self.downcase.gsub(/[\.&\?\+\*\/]/, '').gsub(/\s+/, '_').gsub(/'/, '_')).gsub(/%C3%AB/u, 'e').gsub(/%E4/u, 'a').gsub(/%C3%EA/u, 'a').gsub(/%AB/u, 'e').gsub(/%C3%98/u, 'O').gsub(/%C3%A5/u, 'a').gsub(/%C3%A9/u, 'e').gsub(/%C3%B8/u, 'oe').gsub(/%C5%A1/u, 's').gsub(/%C3%A6/u, 'ae').gsub(/%C3%B6/u, 'oe').gsub(/%C3%A8/u, 'e').gsub(/%C3%BC/u, 'ue').gsub(/%C3%A4/u, 'ae').gsub(/%C3%AA/u, 'e').gsub(/%C3%AC/u, 'i').gsub(/%C3%AD/u, 'i').gsub(/%C3%A7/u, 'c').gsub(/%C3%9F/u, 'ss').gsub(/'/, '').gsub(/%C3%A1/u, 'a').gsub(/%C3%B1/u, 'n').gsub(/%C3%BD/u, 'y').gsub(/%C3%B3/u, 'o').gsub(/%C3%BA/u, 'u').gsub(/%C3%AF/u, 'i').gsub(/%C5%99/u, 'r').gsub(/%C4%9B/u, 'e').gsub(/%C3%96/u, 'U').gsub(/%C4%87/u, 'c').gsub(/%C3%B4/u, 'o').gsub(/%C3%86/u, 'AE').gsub(/%C3%B0/u, 'd')
   end
   def sqlify
     return "'" + self.gsub(/'/, "''").gsub(/\\/, '\&\&') + "'"
@@ -112,36 +141,64 @@ class String
   end
 end
 
+class Array
+  def uniq_by(&blk)
+    transforms = {}
+    select do |el|
+      t = blk[el]
+      should_keep = !transforms[t]
+      transforms[t] = true
+      should_keep
+    end
+  end
+end
+
 def h(str)
   return str
 end
 
-def mobile_event(x, event, with_speakers, with_room)
+def mobile_event(x, event, with_speakers, with_room, with_track)
+  raise "event without a slug: #{event.event_id}" if event.slug.nil?
+
   x.li do
     x.span("#{event.start_time.strftime("%H:%M")}-#{(event.start_time+event.duration).strftime("%H:%M")}", {:class=>"time"})
     x.span(" (#{event.conference_room})", {:class=>"room"}) if with_room
     x.br
     x.a(event.title, {:href=>"#{@mobile_base_url}event/#{event.slug.urlify}",:class=>"title"})
-    speakers = (@event_speakers[event.event_id] or [])
+    speakers = (@event_speakers[event.event_id] or []).uniq
+    if with_track then
+      x.br
+      x << event.conference_track
+    end
     if with_speakers and not speakers.empty? then
       x.br
-      x << speakers.collect{|s| s.name.shortnamify}.join(", ")
+      x << speakers.select{|s| not s.name =~ /fosdem|staff/i}.collect{|s| s.name.shortnamify}.join(", ")
     end #if
   end #li
 end #_event
 
 def load_room_image(room)
-  file = File.open(@template_prefix + "rooms/#{room}.png", "rb")
-  content = file.read
-  file.close
-  return "data:image/png;base64," + Base64.encode64(content)
+  begin
+    file = File.open(@template_prefix + "rooms/#{room}.png", "rb")
+    content = file.read
+    file.close
+    return "data:image/png;base64," + Base64.encode64(content)
+  rescue
+    return nil
+  end
 end
 
 def load_person_image(person_id, size)
   img = Person_image.select({:person_id=>person_id})
   return nil if img.nil? or img.empty?
   img = img[0]
-  return "data:#{img.mime_type};base64," + Base64.encode64(resize_image(img.image, size, img.mime_type))
+  return nil if img.image.length < 1
+  begin
+    return "data:#{img.mime_type};base64," + Base64.encode64(resize_image(img.image, size, img.mime_type))
+  rescue => e
+    puts "WARNING: failed to load person image for person_id=#{person_id}: #{e.message}"
+    return nil
+  end
 end
 
 def write_file( filename, content )
@@ -246,6 +303,7 @@ def mime_to_ext(mime)
   ext = case mime
         when "image/png" then "png"
         when "image/jpeg" then "jpg"
+        when "image/gif" then "gif"
         else raise "Unsupported MIME type #{mime}"
         end
   return ext
@@ -255,6 +313,7 @@ def resize_image(image, size, mime)
   format = case mime
            when "image/png" then "PNG"
            when "image/jpeg" then "JPEG"
+           when "image/gif" then "GIF"
            else raise "Unsupported MIME type #{mime}"
            end
   resized = Magick::Image.from_blob(image)[0]
@@ -272,7 +331,7 @@ def mkfile(f)
   o = @output_dir + '/' + f
   d = File.dirname(o)
   File.makedirs(d) #unless File.directory? d
-  puts "Rendering #{o}"
+  # puts "Rendering #{o}"
   yield File.open(o, File::CREAT|File::WRONLY|File::TRUNC)
 end
 
@@ -295,7 +354,7 @@ def rxmlfile(template_filename, output_filename, wrap_with_div=true)
   o += '.html' unless o =~ /\./
   d = File.dirname(o)
   File.makedirs(d) #unless File.directory? d
-  puts "Rendering #{o}"
+  # puts "Rendering #{o}"
   buffer = rxml(template_filename, wrap_with_div)
   out = File.open(o, File::CREAT|File::WRONLY|File::TRUNC)
   out.write(buffer)
@@ -304,12 +363,17 @@ end
 
 def is_main_track(t)
   raise "t is nil" if t.nil?
-  if (t.is_a? String) then
-    return (t =~ /^keynotes$/i or t =~ /track$/i) ? true : false
+  if is_devroom_track(t) or is_lightning_talk(t) or is_cert_exam(t) then
+    return false
   else
-    raise "#{t.class} (#{t.inspect}) does not have a conference_track method" unless t.respond_to?(:conference_track)
-    return is_main_track(t.conference_track)
+    return true
   end
+  #if (t.is_a? String) then
+  #  return (t =~ /^keynotes$/i or t =~ /track$/i) ? true : false
+  #else
+  #  raise "#{t.class} (#{t.inspect}) does not have a conference_track method" unless t.respond_to?(:conference_track)
+  #  return is_main_track(t.conference_track)
+  #end
 end
 
 def is_devroom_track(t)
@@ -325,7 +389,7 @@ end
 def is_lightning_talk(t)
   raise "t is nil" if t.nil?
   if (t.is_a? String) then
-    return (t =~ /^lightning\s+talks?$/i) ? true : false
+    return (t =~ /^lightning\s*talks?$/i) ? true : false
   else
     raise "#{t.class} (#{t.inspect}) does not have a conference_track method" unless t.respond_to?(:conference_track)
     return is_lightning_talk(t.conference_track)
@@ -335,7 +399,7 @@ end
 def is_cert_exam(t)
   raise "t is nil" if t.nil?
   if (t.is_a? String) then
-    return (t =~ /^certifications?$/i) ? true : false
+    return (t =~ /^(certifications?|cacert)$/i) ? true : false
   else
     raise "#{t.class} (#{t.inspect}) does not have a conference_track method" unless t.respond_to?(:conference_track)
     return is_cert_exam(t.conference_track)
@@ -346,9 +410,11 @@ end
 #################################################################################################################
 
 # make some output directories
-['images', 'images/speaker', 'event', 'speaker', 'track', 'attachments', 'room', 'day', 'includes'].each do |d|
+['images', 'images/speaker', 'event', 'speaker', 'track', 'room', 'day', 'includes'].each do |d|
   File.makedirs(d)
 end
+
+total = 0
 
 @tracks = []
 @track_map = {}
@@ -364,13 +430,22 @@ begin
     @main_tracks << t if is_main_track(t)
     @devroom_tracks << t if is_devroom_track(t)
   end
+  total += @tracks.length if export_schedule
+  total += (@tracks.length * 2) if export_xcal
+  total += @tracks.length if export_mobile
+  total += @tracks.length if export_odf
 end
 
 @event_person_id_map = {}
 @event_speakers = {}
 @speakers = []
 begin
-  ep = View_event_person.select({:translated=>@lang, :conference_id=>@conference.conference_id, :event_role=>'speaker'})
+  ep = View_event_person.select({
+    :translated=>@lang,
+    :conference_id=>@conference.conference_id,
+    :event_role=>'speaker',
+  })
+    #:event_role_state=>'confirmed'
   ep.each do |x|
     @event_person_id_map[x.event_id.to_i] = [] unless @event_person_id_map.has_key? x.event_id
     @event_person_id_map[x.event_id.to_i] << x.person_id.to_i
@@ -378,8 +453,11 @@ begin
   @event_person_id_map.each do |eid,pids|
     @event_speakers[eid] = [] unless @event_speakers.has_key? eid
     pids.each do |pid|
-      p = View_schedule_person_fosdem.select({:person_id=>pid, :event_role=>'speaker'})
+      p = View_schedule_person_fosdem.select({:person_id=>pid, :event_role=>'speaker', :conference_id=>@conference.conference_id})
+      #p = View_schedule_person.select({:person_id=>pid, :event_role=>'speaker', :conference_id=>@conference.conference_id})
       p.each do |person|
+        #next if person.conference_person_id.nil?
+        next unless person.event_role == 'speaker'
         @event_speakers[eid] << person
         if not @speaker_map.has_key? person.person_id then
           @speakers << person
@@ -394,13 +472,20 @@ begin
   end
 end
 @speakers.uniq!
+total += @speakers.length if export_schedule
+total += @speakers.length if export_mobile
 
 @events = []
 @event_map = {}
 @speaker_events = {}
 @events_by_track = {}
 begin
-  events = View_schedule_event_fosdem.select({:translated=>@lang, :conference_id=>@conference.conference_id},{:order=>[:title,:subtitle]})
+  events = View_schedule_event.select({
+    :translated=>@lang,
+    :conference_id=>@conference.conference_id,
+  }, {
+    :order=>[:title,:subtitle]
+  })
   events.each do |e|
     @events << e
     @event_map[e.event_id] = e
@@ -415,7 +500,33 @@ begin
     @lightning_talks << e if is_lightning_talk(e)
     @cert_exams << e if is_cert_exam(e)
   end
+
+  total += @events.length if export_schedule
+  total += @events.length if export_mobile
 end
+
+# uniquify speaker_events
+begin
+  seu = {}
+  @speaker_events.each_pair do |person_id, events|
+    seu[person_id] = events.uniq_by{|e| e.event_id}
+  end
+  @speaker_events = seu
+end
+
+# uniquify event_speakers
+begin
+  esu = {}
+  @event_speakers.each_pair do |event_id, speakers|
+    esu[event_id] = speakers.uniq_by{|p| p.person_id}
+  end
+  @event_speakers = esu
+end
+
+speakers_with_events = @speakers.select{|s| @speaker_events.has_key? s.person_id }
+@speakers = speakers_with_events
+total += @speakers.length if export_schedule
+total += @speakers.length if export_mobile
 
 def track_sort_base(track)
   -(-track.rank + case track.conference_track
@@ -445,6 +556,8 @@ begin
     @rooms << room
     @room_map[room.conference_room_id] = room
   end
+  total += @rooms.length if export_schedule
+  total += @rooms.length if export_mobile
 end
 
 @room_events = {}
@@ -486,11 +599,45 @@ begin
   end
 end
 
+@event_files = {}
+@event_files_by_aid = {}
+begin
+  # WARNING! changing the order of columns here messes up the values, VERY FRAGILE!
+  Event_attachment.select({:public => true}, {:columns => [:attachment_type, :filename, :event_id, :event_attachment_id, :attachment_type, :mime_type, :title]}).each do |ea|
+    #next unless @event_map.has_key? ea.event_id
+
+    #puts "AT=\"#{ea.attachment_type}\" -- EID=\"#{ea.event_id}\" -- EAID=\"#{ea.event_attachment_id}\" -- AT=\"#{ea.attachment_type}\" MT=\"#{ea.mime_type}\" -- F=\"#{ea.filename}\" -- T=\"#{ea.title}\""
+    @event_files[ea.event_id] = [] unless @event_files.has_key? ea.event_id
+    @event_files[ea.event_id] << ea
+    @event_files_by_aid[ea.event_attachment_id] = ea
+    raise "attachment without filename for event_id=#{ea.event_id} and event_attachment_id=#{ea.event_attachment_id}" unless (not ea.filename.nil?) and (ea.filename.length > 0)
+  end
+end
+
+@event_files_to_save = {}
+def save_event_attachment(event_attachment_id)
+  @event_files_to_save[event_attachment_id] = 1
+end
+def attachment_href(event, attachment)
+  return "#{event.event_id}/#{attachment.event_attachment_id}_#{attachment.filename}"
+end
+def attachment_title(attachment)
+  if (not attachment.title.nil?) and (attachment.title.length > 0) then
+    title = attachment.title
+  else
+    title = attachment.filename
+  end
+  if (not attachment.attachment_type.nil?) and (attachment.attachment_type.length > 0) then
+    title = "#{title} (#{attachment.attachment_type})"
+  end
+  return title
+end
+
 def ical(calname, filename, events)
   eol = $\
   $\ = "\r\n"
   o = @output_dir + '/' + filename
-  puts "Rendering #{o}"
+  # puts "Rendering #{o}"
   File.open(o, File::CREAT|File::WRONLY|File::TRUNC) do |f|
     # use print here and not puts, as ics files MUST be CRLF (as of RFC2445) and
     # $\ only affects print, and not puts
@@ -532,12 +679,26 @@ end #ical
 
 #################################################################################################
 
-begin
+total += 1 if export_sql
+total += 1 if export_php
+total += 1 if export_mobile
+total += 1 if export_xml
+total += 2 if export_xcal
+total += (1 + 2 + 1 + 1 + 1 + 1 + 1 + 1 + 1) if export_schedule
+
+#################################################################################################
+
+pbar = ProgressBar.new("Exporting", total)
+pbar.long_running
+pbar.bar_mark = '#'
+
+if export_odf then
   @rooms.each do |@room|
     roomevents = @events.select{|e| e.conference_room_id==@room.conference_room_id}
     next if roomevents.empty?
     roomevents.group_by{|e| e.start_datetime.to_date}.each do |@day, @roomevents|
       rxmlfile('odf', "odf/#{@room.conference_room.urlify}-#{@day.strftime("%a").downcase}.xml", false)
+      pbar.inc
     end
   end
 
@@ -550,10 +711,9 @@ begin
   #    end
   #  end
   #end
-  exit 0 if ENV.has_key? 'ONLYODF'
 end
 
-if @export_sql then
+if export_sql then
   mkfile 'schedule.sql' do |f|
     f.puts """
 DROP TABLE IF EXISTS schedule;
@@ -582,102 +742,132 @@ CREATE TABLE schedule (
       f.puts "INSERT INTO schedule(t,url,title,subtitle,abstract,description) VALUES('speaker', #{speaker.name.urlify.sqlify}, #{speaker.name.namify.sqlify}, NULL, #{s(speaker.abstract)}, #{s(speaker.description)});"
     end #@speakers
   end #f
+  pbar.inc
   exit 0 if ENV.has_key? 'ONLYSQL'
 end
 
-begin
+if export_mobile then
   rxmlfile('mobile', 'mobile', false)
+  pbar.inc
   @events.each do |event|
     @event = event
     rxmlfile('event-mobile', "mobile/event/#{event.slug.urlify}", false)
+    pbar.inc
   end
   @speakers.each do |speaker|
     @speaker = speaker
+    next if @speaker.conference_person_id.nil?
     rxmlfile('speaker-mobile', "mobile/speaker/#{speaker.name.urlify}", false)
+    pbar.inc
   end
 end
 exit 0 if ENV.has_key? 'ONLYMOBILE'
 
-begin
-  puts "Rendering person pictures"
+if export_schedule or export_mobile then
+  # puts "Rendering person pictures"
   images = Person_image.select({})
   images.each do |img|
     next unless img.public
     next unless @speaker_map.has_key? img.person_id
+    next unless img.image.length > 0
     speaker = @speaker_map[img.person_id]
     @speaker_images[img.person_id] = img
     IMAGE_SIZES.each do |size|
       ext = mime_to_ext(img.mime_type)
       f = "images/speaker/#{speaker.name.urlify}-#{size}x#{size}.#{ext}"
       #puts "rendering image #{f}"
-      write_file(f, resize_image(img.image, size, img.mime_type)) #'png'))
+      begin
+        write_file(f, resize_image(img.image, size, img.mime_type)) #'png'))
+      rescue => e
+        puts "WARNING: failed to render person image for person_id=#{img.person_id}: #{e.message}"
+      end
     end
   end
 end
 
-begin
+if export_xml then
   rxmlfile('xml', "schedule.#{@lang}.xml", false)
+  pbar.inc
+end
+
+if export_xcal then
   begin
     @xcal_events = @events
     @xcal_cal = "#{@conference.acronym}"
     rxmlfile('xcal', "schedule.#{@lang}.xcs", false)
+    pbar.inc
   end
   ical("#{@conference.acronym}", "schedule.#{@lang}.ics", @events)
+  pbar.inc
   @tracks.each do |track|
     track_events = (@events_by_track[track.conference_track_id] or [])
     ical("#{@conference.acronym} (#{track.conference_track})", "track/#{track.conference_track.urlify}.ics", track_events)
+    pbar.inc
     @xcal_events = track_events
     @xcal_cal = "#{@conference.acronym} (#{track.conference_track})"
     rxmlfile('xcal', "track/#{track.conference_track.urlify}.xcs", false)
+    pbar.inc
   end
+end
 
+if export_schedule then
   @urlprefix = ''
   rxmlfile('days', 'days')
+  pbar.inc
   begin
     @urlprefix = '../'
     [1, 2].each do |@day|
       rxmlfile('days', "day/#{@day}")
+      pbar.inc
     end
   end
   rxmlfile('rooms', 'rooms')
+  pbar.inc
   @speakers_per_row = 4
   rxmlfile('allspeakers', 'allspeakers')
+  pbar.inc
   rxmlfile('maintracks', 'maintracks')
+  pbar.inc
   rxmlfile('tracks', 'tracks')
+  pbar.inc
   rxmlfile('devrooms', 'devrooms')
+  pbar.inc
   rxmlfile('events', 'events')
-end
+  pbar.inc
 
-begin
   @speakers.each do |speaker|
     @speaker = speaker
     rxmlfile('speaker', "speaker/#{speaker.name.urlify}")
+    pbar.inc
   end
-end
 
-begin
   @events.each do |event|
     @event = event
+    if @event_files.has_key? event.event_id then
+      @files = @event_files[event.event_id]
+    else
+      @files = []
+    end
     rxmlfile('event', "event/#{event.slug.urlify}")
+    pbar.inc
   end
-end
 
-begin
   @no_speaker_image = true
   @tracks.each do |track|
     @track = track
     @track_events = (@events_by_track[track.conference_track_id] or [])
     rxmlfile('track', "track/#{@track.conference_track.urlify}")
+    pbar.inc
   end
-end
 
-begin
   @rooms.each do |room|
     @room = room
     rxmlfile('room', "room/#{room.conference_room.urlify}")
+    pbar.inc
   end
 end
 
+if export_php then
 mkfile 'includes/maps.php' do |f|
   f.puts "<?php"
   f.puts '$PENTABARF_EVENT_TITLE_BY_URL = array();'
@@ -725,6 +915,48 @@ mkfile 'includes/maps.php' do |f|
     end
   end
 end #f
+pbar.inc
+end #export_php
+
+if export_schedule then
+  h = {}
+  @event_files_to_save.keys.each do |aid|
+    ea = @event_files_by_aid[aid]
+    event = @event_map[ea.event_id]
+    raise "failed to find event with id \"#{ea.event_id}\" in event_map" if event.nil?
+    l = nil
+    unless h.has_key? event.event_id then
+      x = {}
+      x['event'] = event
+      x['attachments'] = []
+      h[event.event_id] = x
+    end
+    h[event.event_id]['attachments'] << ea
+  end
+  @attachments = h.values
+  rxmlfile('attachments', "attachments")
+end
+
+pbar.finish
+
+unless @event_files_to_save.empty? then
+  efbar = ProgressBar.new("Attachments", @event_files_to_save.keys.count)
+  @event_files_to_save.keys.each do |aid|
+    a = @event_files_by_aid[aid]
+    unless a.nil? then
+      filename = a.filename
+      d = "#{@output_dir}/event/#{a.event_id}"
+      data = Event_attachment.select_single({:event_attachment_id => aid}, {:columns => [:data]})
+      File.makedirs(d) unless File.directory? d
+      fqfilename = "#{d}/#{a.event_attachment_id}_#{filename}"
+      outfile = File.new(fqfilename, 'wb')
+      outfile.puts(data.data)
+      outfile.close
+    end
+    efbar.inc
+  end
+  efbar.finish
+end
 
 exit 0
 

@@ -18,7 +18,11 @@ xml.div(:id=>'track',:class=>'section') do
   rooms = (@track_rooms[@track.conference_track_id] or [])
   if not (rooms.nil? or rooms.empty?) then
     xml.div({:id=>"track-rooms"}) do
-      xml.text! "Rooms: "
+      if rooms.count > 1 then
+        xml.text! "Rooms: "
+      else
+        xml.text! "Room: "
+      end
       first = true
       rooms.each do |r|
         xml.text! ", " unless first
@@ -60,7 +64,10 @@ xml.div(:id=>'track',:class=>'section') do
               xml.a(event.title,{:href=>"../"+url_for(:action=>:event,:slug=>event.slug)})
             end
             xml.td(:class=>"event speaker") do
+              first = true
               (@event_speakers[event.event_id] or []).each do |speaker|
+                xml.text! ", " unless first
+                first = false
                 xml.a(speaker.name,{:href=>"../"+url_for(:action=>:speaker,:name=>speaker.name)})
               end
             end

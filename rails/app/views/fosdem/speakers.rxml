@@ -6,7 +6,7 @@ xml.div(:id=>'speaker-index',:class=>'section') do
       c = -1
       opened = false
       @mtspeakers.each_unique(:person_id) do | person |
-        next if person.name == "FOSDEM"
+        next if person.name =~ /fosdem|staff/i
 
         c += 1
         if c >= @speakers_per_row then

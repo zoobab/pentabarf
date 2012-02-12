@@ -15,6 +15,9 @@ xml.schedule do
   @conference.days.each_with_index do | day, index |
     xml.day(:index=>index + 1,:date=>day.conference_day.to_s) do
       @rooms.each do | room |
+
+        next unless @only_rooms.empty? or @only_rooms.include?(room.conference_room)
+
         xml.room({:name => room.conference_room}) do
           room_events = {}
           @events.select{|e| e.conference_day == day.conference_day && e.conference_room == room.conference_room}.each do | event |

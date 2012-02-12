@@ -34,7 +34,7 @@ def _track(x, elist, title, id, with_split, with_speakers, with_room)
             x.li(day.strftime("%A %Y-%m-%d"), {'data-role'=>'list-divider'}) if day.is_a? Date
             raise "dayevents is Nil for day=#{day.inspect}" if dayevents.nil?
             dayevents.sort_by{|e| e.start_time}.each do |event|
-              mobile_event(x, event, with_speakers, with_room)
+              mobile_event(x, event, with_speakers, with_room, false)
             end #dayevents
           end #dh
         end #ul
@@ -45,7 +45,7 @@ end #_track
 
 def _track2(xml, events, title, id, with_speakers, with_room)
   # skip tracks that don't have any talks
-  next if events.empty?
+  return if events.empty?
 
   # when the track has talks over more than one day,
   # AND when each day would have more than 3 talks,
@@ -89,7 +89,7 @@ xml << "<!DOCTYPE html>\n"
 xml.html do
   xml.head do
     xml << "<meta charset=\"utf-8\"></meta>\n"
-    xml.title('FOSDEM Schedule')
+    xml.title("#{@confname} Schedule")
     xml.link({:rel=>'stylesheet', :href=>'http://code.jquery.com/mobile/1.0a2/jquery.mobile-1.0a2.min.css', :type=>'text/css'})
     xml.script({:src=>'http://code.jquery.com/jquery-1.4.4.min.js'}) do
     end
@@ -104,7 +104,7 @@ xml.html do
   xml.body do
     xml.div({'data-role'=>'page', :id=>'main'}) do
       xml.div({'data-role'=>'header'}) do
-        xml.h1('FOSDEM 2011 Schedule')
+        xml.h1(@confname)
       end #header
       xml.div({'data-role'=>'content'}) do
         xml.ul({'data-role'=>'listview'}) do
@@ -197,8 +197,9 @@ xml.html do
         end #header
         xml.div({'data-role'=>'content'}) do
           room_data_small = load_room_image("thumbs/#{room.conference_room.urlify}")
-          #xml.img({:src=>"http://fosdem.org/2011/map/room/#{room.conference_room.urlify}/small",:class=>'room-on-map'})
-          xml.img({:src=>room_data_small,:class=>'room-on-map'})
+          unless room_data_small.nil? then
+            xml.img({:src=>room_data_small,:class=>'room-on-map'})
+          end
           rg = @room_geo[room.conference_room.urlify]
           unless rg.nil? then
             xml.p do
@@ -215,7 +216,7 @@ xml.html do
               next if dayevents.empty?
               xml.li(day.strftime("%A %Y-%m-%d"), {'data-role'=>'list-divider'});
               dayevents.sort_by{|e| e.start_time}.each do |event|
-                mobile_event(xml, event, true, false)
+                mobile_event(xml, event, true, false, true)
               end #dayevents
             end #events
           end #ul

@@ -40,6 +40,8 @@ xml.html do
           end #p
         end
 
+        raise "speaker.conference_person_id is nil for #{@speaker.name}" if @speaker.conference_person_id.nil?
+
         links = Conference_person_link.select({:conference_person_id=>@speaker.conference_person_id})
         unless links.empty? then
           xml.ul({'data-role'=>'listview', 'data-inset'=>'true'}) do
@@ -57,7 +59,7 @@ xml.html do
           xml.ul({'data-role'=>'listview', 'data-inset'=>'true'}) do
             xml.li("Events", {'data-role'=>'list-divider',:role=>'heading'})
             events.each do |event|
-              mobile_event(xml, event, false, true)
+              mobile_event(xml, event, false, true, false)
             end #event
           end #ul
         end #empty

@@ -9,7 +9,7 @@ xml.div(:id=>'speaker',:class=>'section') do
         xml.th(local('schedule::start_time'))
         xml.th(local('schedule::event_duration'))
       end
-      (@speaker_events[@speaker.person_id] or []).sort_by{|e| e.start_datetime}.each do | event |
+      (@speaker_events[@speaker.person_id] or []).uniq_by{|e| e.event_id}.sort_by{|e| e.start_datetime}.each do | event |
         xml.tr do
           xml.td do
             xml.a(event.title,{:href=>'../'+url_for(:action=>:event,:slug=>event.slug)})
@@ -48,14 +48,16 @@ xml.div(:id=>'speaker',:class=>'section') do
     end
   end
 
-  links = Conference_person_link.select({:conference_person_id=>@speaker.conference_person_id})
-  if links.length > 0
-    xml.div(:class=>'links') do
-      xml.h2 local('schedule::links')
-      xml.ul do
-        links.each do | link |
-          xml.li do
-          xml.a( link.title ? link.title : link.url, {:href=>link.url})
+  unless @speaker.conference_person_id.nil? then
+    links = Conference_person_link.select({:conference_person_id=>@speaker.conference_person_id})
+    if links.length > 0
+      xml.div(:class=>'links') do
+        xml.h2 local('schedule::links')
+        xml.ul do
+          links.each do | link |
+            xml.li do
+            xml.a( link.title ? link.title : link.url, {:href=>link.url})
+            end
           end
         end
       end

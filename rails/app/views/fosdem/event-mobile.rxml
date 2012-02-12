@@ -66,7 +66,7 @@ xml.html do
             xml.h3(heading)
             xml.ul({'data-role'=>'listview', 'data-inset'=>'true'}) do
               event_list.each do |event|
-                mobile_event(xml, event, true, with_room)
+                mobile_event(xml, event, true, with_room, false)
               end #each
             end #ul
           end #div
