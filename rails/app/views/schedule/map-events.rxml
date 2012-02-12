@@ -1,0 +1,6 @@
+xml.text! "$PENTABARF_EVENTS_BY_ID = array();"
+xml.text! "$PENTABARF_EVENTS_BY_TITLE = array();"
+@events.each do | event |
+  xml.text! "$PENTABARF_EVENTS_BY_ID[#{event.event_id}] = \"#{event.title}\";"
+  xml.text! "$PENTABARF_EVENTS_BY_TITLE[#{event.title}] = \"#{event.event_id}\";"
+end

@@ -1,0 +1,351 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    	<title>FOSDEM: Pentabarf HOWTO</title>
+    	<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+        <link rel="shortcut icon" href="https://fosdem.org/sites/all/themes/fosdem/favicon.ico" type="image/x-icon" />
+        <style type="text/css">
+            body {
+                background: white;
+                font-family: sans-serif;
+                font-size: 10pt;
+            }
+            h1 {
+                border-top: 1px solid black;
+                margin-top: 3em;
+            }
+            h1:first-child {
+                border-top: none;
+                margin-top: 0.5em;
+            }
+            .i img {
+                float: left;
+                margin-right: 3em;
+                border: 1px solid #aaa;
+            }
+            .i p {
+            }
+            .i {
+                clear: both;
+                margin-bottom: 1.5em;
+                padding: 0.5em 0 0.5em 0;
+            }
+            hr {
+                clear: both;
+                border: 1px dashed #aaa;
+                margin-top: 1em;
+                margin-bottom: 1em;
+            }
+        </style>
+    </head>
+    <body>
+        <h1>FOSDEM Pentabarf HOWTO</h1>
+        <p>
+            This document will give you a short rundown of how to add speakers and sessions in Pentabarf
+            for FOSDEM.
+        </p>
+
+        <h1>Login</h1>
+        <p>
+        First of all, log in to <a href="https://penta.fosdem.org">penta.fosdem.org</a>.
+        You should have received credentials to do so from the <a href="mailto:devrooms@fosdem.org">devrooms team</a>.
+        If not, please contact them.
+        </p>
+
+        <h1>First screen</h1>
+        <div class="i">
+            <img src="00_login.jpg"/>
+            <p>
+            You will be presented with a first screen that only contains information that is of importance
+            to the core staff team.
+            </p>
+        </div>
+        <hr/>
+        <div class="i">
+            <img src="00_login_buttons.jpg"/>
+            <p>
+            The more important bits, for you, are to be found in the middle of the navigation bar on the left:
+            <ul>
+                <li>the first row of icons (with a looking glass) are for search</li>
+                <li>the second row of icons (with a + sign) are for creating</li>
+                <li>the first icon from the left is for <em>Person</em> instances, that is, speakers</li>
+                <li>the icon in the middle is for <em>Event</em> instances, that is, talks</li>
+                <li>the third icon is for <em>Conference</em>, something you do not have access to</li>
+            </ul>
+            </p>
+        </div>
+
+        <h1>Adding a speaker</h1>
+        <p>
+        You should add speakers first, either all of them, or on a talk-by-talk basis, that is up to you.
+        </p>
+        <p>
+        Later on, when you create Events, you can then assign Persons as speakers in those Events.
+        The opposite does not work: while you can see which Events a Person is associated with in the
+        Person screen, and navigate there, you cannot <em>assign</em> a Person as a speaker to an Event from
+        the Person screen.
+        </p>
+        <p>
+        Note that the database contains Persons who have been speakers in FOSDEM 2011 as well and, hence,
+        please first search whether a Person already exists.
+        </p>
+        <h1>Searching for an existing speaker</h1>
+        <div class="i">
+            <img src="01_search.jpg"/>
+            <p>
+            The most convenient option is to use the search text box that is above the icons that have
+            been presented above.
+            </p>
+            <p>
+            Note that it searches for both Events and Persons.
+            </p>
+            <p>
+            If you do find a match, click on the Person and edit data there instead of creating
+            a new Person, but the screens to fill out will be exactly the same as explained below.
+            </p>
+        </div>
+        <h1>Creating a new Person</h1>
+        <div class="i">
+            <img src="02_icon_person_new.jpg"/>
+            <p>
+            Click on the icon as depicted on the left to create a new Person.
+            </p>
+        </div>
+        <hr/>
+        <div class="i">
+            <img src="02_new_person.jpg"/>
+            <p>
+            This is the screen you will be presented with when creating a new Person.
+            Note that Pentabarf, for some odd reason, keeps in mind which tab (on top) you have last selected, so
+            you might end up in a different tab than "General". If that is the case, please click on the "General"
+            tab first.
+            </p>
+        </div>
+        <hr/>
+        <div class="i">
+            <img src="03_person_general.jpg"/>
+            <p>
+            This is what the <em>General</em> section should look like once it is filled out.<br/>
+            Please note that the relevant fields that must be filled out here are as follows:
+            <ul>
+                <li>First Name</li>
+                <li>Last Name</li>
+            </ul>
+            Everything else on this screen is optional.
+        </div>
+        <hr/>
+        <div class="i">
+            <img src="04_person_image.jpg"/>
+            <p>
+            If the speaker provided a photo, you can upload it by clicking on the <em>Browse...</em> button next
+            to the <em>Image</em> field, and specify the file there.
+            <br/><br/>
+            Note that the website expects the photos to be at the very least square, and ideally 128 x 128 pixels.
+            You may need to use something like Gimp, Krita, or the likes, in order to cut out the head and resize
+            accordingly.
+            <br/><br/>
+            We typically use <a href="http://docs.gimp.org/en/gimp-tutorial-quickie-crop.html">Gimp's Crop Tool</a>
+            for that purpose.
+            <br/><br/>
+            It is also preferred to use the PNG format for images, although JPEG and GIF are supported as well.
+            <br/><br/>
+            <em><u><b>Important:</b></u></em> please do also enable the <em>Image public?</em> checkbox in order
+            for that picture to be exported and visible on the website.
+        </div>
+        <hr/>
+        <div class="i">
+            <img src="06_person_description_filled.jpg"/>
+            <p>
+            Then, click on the <em>Description</em> tab on top to enter the biography of the speaker and
+            fill out the following fields:
+            <ul>
+                <li><em>Abstract</em> is mandatory and should contain a brief bio of the speaker</li>
+                <li><em>Description</em> is optional and may contain additional information that did not fit
+                into the <em>Abstract</em></li>
+            </ul>
+            Note that we do not include the speaker bios in the booklet for devroom speakers and, hence,
+            it does not matter much whether you put everything into the <em>Abstract</em> or whether you split
+            it up. The website displays <b>both</b>, first the <em>Abstract</em> and then the <em>Description</em>.
+            <br/><br/>
+            Typically, we usually put everything into the <em>Abstract</em> field <tt>;)</tt>
+            </p>
+        </div>
+        <hr/>
+        <div class="i">
+            <img src="save.jpg"/>
+            <p>
+            Once you have clicked the <em>Save</em> button as it appears in the bottom right corner
+            of your browser window as soon as you have changed anything, the photo will be uploaded
+            (if applicable), the data be persisted, and the page be reloaded.
+        </div>
+
+        <h1>Adding a talk</h1>
+        <p>
+        Once a speaker (or all speakers) of a talk, or all speakers of all talks (as you prefer) have
+        been created, you can now add their talks to the conferencing system.
+        </p>
+        <hr/>
+        <div class="i">
+            <img src="10_event_new.jpg"/>
+            <p>
+            You should do so by clicking the <em>new event</em> button on the left, and as depicted here.
+            </p>
+        </div>
+        <hr/>
+        <div class="i">
+            <img src="11_event_new_page.jpg"/>
+            <p>
+            You will then be presented with a blank entry for an <em>Event</em>.<br/>
+            As for creating new <em>Person</em> instances, Pentabarf might open that page
+            with a different tab than <em>General</em>. If that is the case, please click
+            on the <em>General</em> tab above.
+            </p>
+        </div>
+        <div class="i">
+            <img src="12_event_general.jpg"/>
+            <p>
+            Data must be entered as follows:
+            <ul>
+                <li><em>Event title</em>: quite obviously, the title of the talk: please keep it rather short,
+                as a long title will result in quite a few issues for displaying it on the schedule and the
+                booklet (remember that we have 300 to 400 sessions to cram in there <tt>;)</tt>)</li>
+                <li><em>Subtitle of the event</em>: is <b>not used</b> anywhere on the website nor the booklet,
+                hence to be kept empty</li>
+                <li><em>Slug</em>: will be used for the URL of the talk on the FOSDEM website; e.g. a slug <code>welcome_to_fosdem</code>
+                will result in the URL of that talk to be <code>https://fosdem.org/2012/schedule/event/<b>welcome_to_fosdem</b></code><br/>
+                For obvious reasons (readable URLs), please restrain to lower case ASCII here and use <code>_</code> (underline) to
+                replace whitespaces (<code>welcome_to_fosdem</code> is definitely nicer than
+                <code>Welcome%20to%20FOSDEM</code> in an URL)</li>
+                <li>Event Origin</em>: does not matter for devrooms and is only for information purposes, so just leave it to
+                its default value, <code>idea</code>, unless you want to keep track of that information yourself</li>
+                <li><em>Event state</em>: <b>must</b> be set to <code>accepted</code> or it will not show up on the schedule</li>
+                <li><em>Progress</em>: <b>must</b> be set to <code>reconfirmed</code> or it will not show up on the schedule</li>
+                <li><em>Team</em>: not used, leave empty</li>
+                <li><em>Submission of presentation slides</em>: not used either, leave to <code>unknown</code> unless you
+                want to use it to keep track of that information yourself</li>
+                <li><em>Track</em>: <b>must</b> be set to the name of your devroom, quite obviously<br/>
+                Note that your devroom has been added to the list of tracks by the FOSDEM staff already. If that is not the case,
+                please <a mailto="devrooms@fosdem.org">contact us</a>.
+            </ul>
+            </p>
+        </div>
+        <hr/>
+        <div class="i">
+            <img src="13_event_persons.jpg"/>
+            <p>
+            The next step here is to define the speaker(s) for that <em>Event</em>.<br/>
+            To do that, please click on the <em>Persons</em> tab on top of the page.
+            </p>
+        </div>
+        <hr/>
+        <div class="i">
+            <img src="14_event_add_person_button.jpg"/>
+            <p>
+            Notice that your name has automatically been filled in as the <em>submitter</em>: you may very well
+            leave that information there as it is, we don't use it anywhere on the website or on the booklet.
+            <br/><br/>
+            Click on the <em>Add person</em> button in order to add one or many people with the role
+            of <em>speaker</em> to the <em>Event</em>.
+            </p>
+        </div>
+        <hr/>
+        <div class="i">
+            <img src="15_event_add_person_box.jpg"/>
+            <p>
+            After clicking the <em>Add person</em> button, an additional row has been added to the list
+            of <em>Person</em>s.<br/>
+            If you wish to add several speakers to an <em>Event</em>, you may of course repeat that operation
+            at will. Every <em>Person</em> with the <em>Event role</em> set to <em>speaker</em> will appear
+            on the schedule (website and booklet).
+            </p>
+        </div>
+        <hr/>
+        <div class="i">
+            <img src="16_event_add_person_speaker.jpg"/>
+            <p>
+            As depicted on the left, make sure to select <em>speaker</em> as the role of the <em>Person</em>.
+            </p>
+        </div>
+        <hr/>
+        <div class="i">
+            <img src="17_event_add_person_confirmed.jpg"/>
+            <p>
+            Once you have selected <code>speaker</code> as the <em>Event role</em>, an additional selection list
+            will appear on its right, for <em>Role state</em>.<br/>
+            That field <b>must</b> be set to <code>confirmed</code> in order for the talk to show up in
+            the schedule.
+            </p>
+        </div>
+        <hr/>
+        <div class="i">
+            <img src="18_event_description.jpg"/>
+            <p>
+            The next step is to click on the <em>Description</em> tab in order to fill out the abstract of the
+            talk.
+            </p>
+        </div>
+        <hr/>
+        <div class="i">
+            <img src="19_event_description_filled.jpg"/>
+            <p>
+            The following fields must be filled out:
+            <ul>
+                <li><em>Abstract</em>: is mandatory; please keep it somewhat shorter as it is the part that will
+                be included in the booklet</li>
+                <li><em>Description</em>: is optional and may be used as an overflow if the abstract of the talk
+                is somewhat longer</li>
+            </ul>
+            The rationale here is that the <em>Abstract</em> shows up both in the booklet and on the website,
+            but the <em>Description</em> is only displayed on the website.<br/>
+            Note that on the website, both are displayed, the <em>Abstract</em> first, and the <em>Description</em>
+            right below, so do not repeat the content of the <em>Abstract</em> in the <em>Description</em> field.
+            </p>
+        </div>
+        <hr/>
+        <div class="i">
+            <img src="21_event_schedule_filled.jpg"/>
+            <p>
+            The last step is to specify the schedule information for that talk. In order to do so,
+            please click the <em>Schedule</em> tab on top of the window.<br/>
+            <br/>
+            Fill out all fields as follows:
+            <ul>
+                <li><em>Day</em>: select <code>Saturday</code> or <code>Sunday</code>, accordingly to
+                when your devroom has been planned (as you have been informed of by the devrooms team) or,
+                if your devroom spans both days, as you have chosen to put it on your schedule</li>
+                <li><em>Start time</em>: self-explanatory</li>
+                <li><em>Duration</em>: self-explanatory</li>
+                <li><em>Room</em>: please select the room that has been assigned to your devroom, as you
+                have been informed of by the devrooms team</li>
+                <li><em>Public event</em>: <b>must</b> be enabled to show up on the schedule</li>
+            </ul>
+            </p>
+        </div>
+        <hr/>
+        <div class="i">
+            <img src="save.jpg"/>
+            <p>
+            As the last step, press the <em>Save</em> button in the lower right corner of your browser
+            window to persist the changes.
+            </p>
+        </div>
+
+        <h1>Exporting</h1>
+        <p>
+        Changing data in Pentabarf does not result in a change of the schedule on the fosdem.org website.<br/>
+        The reason is that we use an export process in between the two in order to integrate the
+        scheduling information from Pentabarf properly into our website.<br/>
+        <br/>
+        Triggering an export is something that only the devrooms team can do and, hence, once you have entered
+        speakers and talks and would like that information to be put on our website, please contact us
+        at <a href="mailto:devrooms@fosdem.org">devrooms@fosdem.org</a>.
+        </p>
+        <p>
+        Note that if your schedule is still in flux, you may want to make sure that your <em>Event</em>s
+        are set to <code>unconfirmed</code> until it is final, or else it will be on our website once we
+        trigger the export (e.g. upon request by another devroom).
+        </p>
+    </body>
+</html>
+

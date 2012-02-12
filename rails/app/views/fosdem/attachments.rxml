@@ -1,0 +1,46 @@
+xml.div(:id=>'attachments-container',:class=>'section') do
+  xml.table(:class=>'attachments') do
+    xml.thead do
+      xml.tr do
+        xml.th('Event')
+        xml.th('Track')
+        xml.th('Attachments')
+      end #tr
+    end #thead
+    xml.tbody do
+      @attachments.sort_by{|x| x['event'].title}.each do |x|
+        event = x['event']
+        attachments = x['attachments']
+
+        event_url = url_for(:action=>:event, :slug=>event.slug)
+        track_url = url_for(:action=>:track, :track=>event.conference_track)
+
+        xml.tr do
+          xml.td do
+            xml.a(event.title, {:href => event_url, :class => "event-title"})
+          end
+          xml.td do
+            xml.a(event.conference_track, {:href => track_url})
+          end
+          xml.td do
+            if attachments.count > 1 then
+              xml.ul do
+                attachments.sort_by{|x| x.title or x.filename}.each do |a|
+                  xml.li do
+                    title = attachment_title(a)
+                    link = attachment_href(event, a)
+                    xml.a(title, {:href => "event/#{link}"})
+                  end #li
+                end
+              end #ul
+            else
+              title = attachment_title(attachments[0])
+              link = attachment_href(event, attachments[0])
+              xml.a(title, {:href => "event/#{link}"})
+            end
+          end #td
+        end #tr
+      end
+    end #tbody
+  end #table
+end
