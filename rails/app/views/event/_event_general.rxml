@@ -19,9 +19,9 @@ xml.div(:id=>'content-general') do
       if not tracks.empty?
       xml << select_row( @event, :conference_track_id, tracks,{:with_empty=>true})
       end
-      #xml << select_row( @event, :event_type, Event_type_localized.select({:translated=>@current_language},{:order=>:name}).map{|e| [e.event_type,e.name]}, {:with_empty=>true} )
-      #xml << file_row( :event_image, :image )
-      #xml << check_box_row( :event_image, :remove )
+      xml << select_row( @event, :event_type, Event_type_localized.select({:translated=>@current_language},{:order=>:name}).map{|e| [e.event_type,e.name]}, {:with_empty=>true} )
+      xml << file_row( :event_image, :image )
+      xml << check_box_row( :event_image, :remove )
 
       if @event.event_id && @event.current_transaction_id != 0
         oldest_transaction = Log::Event.select_single({:event_id=>@event.event_id},{:only=>[:log_transaction_id],:limit=>1,:order=>Momomoto::asc(:log_transaction_id)})
