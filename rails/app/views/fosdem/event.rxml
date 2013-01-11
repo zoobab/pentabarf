@@ -149,6 +149,18 @@ xml.div(:id=>'event',:class=>'section eventpage') do
 
   end # div: #event-meta
 
+  begin
+    # http://video.fosdem.org/2012/devrooms/security/fosdem2012_anders_rundgren_open_security_hardware.webm
+    links = Event_link_internal.select({:event_id => @event.event_id, :link_type => 'video'}).sort_by{|x| x.rank}
+    unless links.empty? then
+      links.each do |l|
+        xml.div(:class=>'video') do
+          xml.video(:src => l.url)
+        end #div
+      end
+    end
+  end
+
   if youtube != nil then
     youtube_url = "http://www.youtube-nocookie.com/v/#{youtube}&hl=en_US&fs=1&rel=0"
     xml.div(:class=>'youtube', :id=>'youtube') do
