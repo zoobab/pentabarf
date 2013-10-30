@@ -1,0 +1,8 @@
+
+FOSDEM runs a severely mangled version of Pentabarf.  Over the years,
+we have pulled in many patches from many places and grown a lot of our
+own changes.  Most of this happened under the influence of various
+mind-expanding substances and without any meaningful revision control.
+
+The purpose of this GitHub project is to try to merge our changes with
+others' and maybe to become a source of truth for other conferences.
