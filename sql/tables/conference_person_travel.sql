@@ -32,7 +32,8 @@ CREATE TABLE base.conference_person_travel (
   need_accommodation BOOL NOT NULL DEFAULT FALSE,
   need_accommodation_cost BOOL NOT NULL DEFAULT FALSE,
   accommodation_roomtype TEXT,
-  accommodation_affiliation TEXT
+  accommodation_affiliation TEXT,
+  accommodation_roommate INTEGER
 );
 
 CREATE TABLE conference_person_travel (
@@ -42,6 +43,7 @@ CREATE TABLE conference_person_travel (
   FOREIGN KEY (travel_currency) REFERENCES currency (currency) ON UPDATE CASCADE ON DELETE RESTRICT,
   FOREIGN KEY (accommodation_currency) REFERENCES currency (currency) ON UPDATE CASCADE ON DELETE RESTRICT,
   FOREIGN KEY (fee_currency) REFERENCES currency (currency) ON UPDATE CASCADE ON DELETE RESTRICT,
+  FOREIGN KEY (accommodation_roommate) REFERENCES conference_person (conference_person_id) ON UPDATE CASCADE ON DELETE SET NULL,
   PRIMARY KEY (conference_person_id)
 ) INHERITS( base.conference_person_travel );
 

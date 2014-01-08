@@ -51,6 +51,14 @@ xml.div(:id=>'content-travel') do
             xml << check_box_row( @conference_person_travel, :need_accommodation )
             xml << select_row( @conference_person_travel, :accommodation_roomtype, ['', 'single', 'double', 'twin'])
             xml << select_row( @conference_person_travel, :accommodation_affiliation, ['', 'FOSDEM', 'Mozilla'])
+            xml.tr do
+              xml.td do xml.label 'Roommate' end
+              xml.td do
+                xml << select_tag('conference_person_travel[accommodation_roommate]',
+                  View_conference_person.select.map{|p| [p.conference_person_id, p.name]},
+                    {:with_empty=>true, :selected=>@conference_person_travel[:accommodation_roommate]})
+              end
+            end
           end
         end
         xml.td :style => "vertical-align:top;" do
