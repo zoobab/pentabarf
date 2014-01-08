@@ -9,6 +9,7 @@ class XcalController < ApplicationController
     rescue Momomoto::Nothing_found
       @conference = Release_preview::Conference.select_single({:conference_id=>params[:conference_id]})
     end
+    @events = View_schedule.select({:translated=>@current_language})
     @filename = "#{@conference.acronym}.xcs"
   end
 

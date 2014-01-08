@@ -2,15 +2,18 @@ xml.div(:id=>'speaker',:class=>'section vcard') do
   xml.div(:id=>'infobox') do
     xml.table do
       xml.tr do xml.th( local( 'schedule::events' ),{:colspan=>2}) end
-      @speaker.events(:translated=>@current_language).each do | event |
-        xml.tr do
-          xml.td do
-            xml.a(:href=>url_for(:conference_id=>@conference.conference_id,:action=>:event,:id=>event.event_id,:language=>params[:language])) do
-              xml.img(:src=>event_image(event.event_id,32))
+      @speaker_events.each do | event |
+	# BUG: shows non-public events (View_event_person does not contain public)
+        if Event.select_single(:event_id => event.event_id).public:
+          xml.tr do
+            xml.td do
+              xml.a(:href=>url_for(:conference_id=>@conference.conference_id,:action=>:event,:id=>event.event_id,:language=>params[:language])) do
+                xml.img(:src=>event_image(event.event_id,32))
+              end
             end
-          end
-          xml.td do
-            xml.a(event.title,{:href=>url_for(:conference_id=>@conference.conference_id,:action=>:event,:language=>params[:language],:id=>event.event_id)})
+            xml.td do
+              xml.a(event.title,{:href=>url_for(:conference_id=>@conference.conference_id,:action=>:event,:language=>params[:language],:id=>event.event_id)})
+            end
           end
         end
       end
@@ -19,20 +22,19 @@ xml.div(:id=>'speaker',:class=>'section vcard') do
 
   xml.h1( @speaker.name, {:class=>'fn'})
   xml.img(:class=>'speaker-image photo',:src=>person_image(@speaker.person_id, 128))
-  xml.div(:class=>'abstract note') do xml << markup(@speaker.abstract) end
-  xml.div(:class=>:description) do xml << markup(@speaker.description) end
+  xml.div(:class=>'abstract note') do xml << markup(@conference_speaker.abstract) end
+  xml.div(:class=>:description) do xml << markup(@conference_speaker.description) end
 
   if @speaker.email
     xml.h2 'Contact'
     xml.p @speaker.email.gsub(/@/, ' at ').gsub(/\./, ' dot ')
   end
-
-  if @speaker.conference_person_id
-    if @speaker.links.length > 0
+  if @conference_speaker.conference_person_id
+    if @speaker_links
       xml.div(:class=>'links') do
         xml.h2 local( 'schedule::links' )
         xml.ul do
-          @speaker.links.each do | link |
+          @speaker_links.each do | link |
             xml.li do
               xml.a( link.title ? link.title : link.url, {:href=>link.url,:class=>:url,:rel=>:bookmark})
             end

@@ -277,12 +277,23 @@ class Pope
   end
 
   def domain_conference_person( action, row )
+    # Tias :: row.conference_person_id does not alwyas exist, sometimes its just called person_id; a little hack to fix that...
+    if defined? row.conference_person_id
+	person_id = row.conference_person_id
+    end
+    if defined? row.person_id
+	person_id = row.person_id
+    end
+
     return if ["conference_person","custom_conference_person"].member?(row.class.table.table_name) && conference_permission?( "conference_person::#{action}", row.conference_id )
-    return if conference_permission?( "conference_person::#{action}", conference_person_conference( row.conference_person_id ) )
-    return if permission?( :'person::modify_own' ) && own_conference_person?( row.conference_person_id )
+    return if conference_permission?( "conference_person::#{action}", conference_person_conference( person_id ) )
+    return if permission?( :'person::modify_own' ) && own_conference_person?( person_id )
 
     # allow everybody with person::modify_own to add conference_person entries for themselves
-    return if ['conference_person'].member?( row.class.table.table_name ) && action == :create && permission?( "person::modify_own") && row.person_id == POPE.user.person_id
+    return if ['conference_person'].member?( row.class.table.table_name ) && action == :create && permission?( "person::modify_own") && person_id == POPE.user.person_id
+
+    # Because none of the above actualy detect a modify_own (the action is not correctly recognized? or own_conference_person is buggy?) here the same if as above, but for action 'modify' for custom_conference_person and conference_person:
+    return if ['conference_person', 'custom_conference_person'].member?( row.class.table.table_name ) && action == :modify && permission?( "person::modify_own") && person_id == POPE.user.person_id
 
     raise Pope::PermissionError
   end

@@ -18,18 +18,18 @@ class ScheduleController < ApplicationController
     raise StandardError unless @day
     @content_title = "#{local('schedule::schedule')} #{@day.name}"
     @rooms = @conference.rooms
-    @events = @conference.events({:conference_day=>{:le=>@day.conference_day},:translated=>@current_language},{:order=>[:title,:subtitle]})
+    @events = View_schedule.select({:conference_day=>{:le=>@day.conference_day},:translated=>@current_language},{:order=>[:title,:subtitle]})
   end
 
   def event
-    @event = @conference.events({:translated=>@current_language,:event_id=>params[:id]})[0]
+    @event = View_schedule.select({:translated=>@current_language,:event_id=>params[:id]})[0]
     raise StandardError unless @event
-    @events = @conference.events({:translated=>@current_language},{:order=>[:title,:subtitle]})
+    @events = View_schedule.select({:translated=>@current_language},{:order=>[:title,:subtitle]})
     @content_title = @event.title
   end
 
   def event_attachment
-    @event = @conference.events({:translated=>@current_language,:event_id=>params[:event_id]})[0]
+    @event = View_schedule.select({:translated=>@current_language,:event_id=>params[:event_id]})[0]
     raise StandardError unless @event
     data = @event.attachments({:event_attachment_id=>params[:event_attachment_id]})[0]
     raise StandardError unless data
@@ -44,35 +44,41 @@ class ScheduleController < ApplicationController
   end
 
   def track_event
-    @track = @conference.tracks({:conference_track=>params[:track]})[0]
+    @track = Conference_track.select_single(:conference_track=>params[:track])
     raise StandardError unless @track
-    @event = @conference.events({:conference_track=>params[:track],:translated=>@current_language,:event_id=>params[:id]})[0]
+    @event = View_schedule.select({:conference_track=>params[:track],:translated=>@current_language,:event_id=>params[:id]})[0]
     raise StandardError unless @event
-    @events = @conference.events({:conference_track=>params[:track],:translated=>@current_language})
+    @events = View_schedule.select({:conference_track=>params[:track],:translated=>@current_language, :public=>true})
     @content_title = @event.title
     render(:action=>:event)
   end
 
   def events
-    @events = @conference.events({:translated=>@current_language},{:order=>[:title,:subtitle]})
+    @events = View_schedule.select({:translated=>@current_language, :public=>true},{:order=>[:start_time,:title,:subtitle]})
   end
 
   def track_events
-    @track = @conference.tracks({:conference_track=>params[:track]})[0]
+    @track = Conference_track.select_single(:conference_track=>params[:track])
     raise StandardError unless @track
-    @events = @conference.events({:conference_track=>params[:track],:translated=>@current_language})
+    @events = View_schedule.select({:conference_track=>params[:track],:translated=>@current_language, :public=>true},{:order=>[:start_time,:title,:subtitle]})
+    @show_info = true
     render(:action=>:events)
   end
 
   def speaker
-    @speaker = @conference.persons({:person_id=>params[:id]},{:order=>[:name]})[0]
+    @speaker = Person.select_single(:person_id=>params[:id])
     raise StandardError unless @speaker
-    @speakers = @conference.persons({},{:order=>[:name]})
+    #@speaker_events = View_event_person.select(:person_id => @speaker.person_id, :conference_id => @conference.conference_id, :event_role=>['speaker','moderator'], :translated=>@current_language ).each do | event |
+    @speaker_events = View_event_person.select(:person_id => @speaker.person_id, :conference_id => @conference.conference_id, :translated=>@current_language)
+    @conference_speaker = Conference_person.select_single({:conference_id=>@conference.conference_id, :person_id=>@speaker.person_id})
+    @speaker_links = Conference_person_link.select(:conference_person_id => @conference_speaker.conference_person_id)
+    @speakers = View_person.select({},{:order=>[:name]})
     @content_title = @speaker.name
   end
 
   def speakers
-    @speakers = @conference.persons({},{:order=>[:name]})
+    #@speakers = View_person.select({},{:order=>[:name]})
+    @speakers = View_event_person.select(:conference_id => @conference.conference_id, :event_role=>['speaker'])
     @content_title = local(:speakers)
   end
 

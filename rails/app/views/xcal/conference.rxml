@@ -1,15 +1,15 @@
-@conference.events(:translated=>@current_language).each do | event |
+@events.each do | event |
   xml.vevent do
     xml.method( "PUBLISH" )
     xml.uid( "#{event.event_id}@#{@conference.acronym}@pentabarf.org")
     xml.tag!( "pentabarf:event-id", event.event_id )
-    xml.tag!( "pentabarf:event-slug", event.slug )
+    xml.tag!( "pentabarf:event-tag", event.slug )
     xml.tag!( "pentabarf:title", event.title )
-    xml.tag!( "pentabarf:subtitle", event.subtitle )
+    xml.tag!( "pentabarf:subtitle", event.subtitle ) unless event.subtitle.nil?
     xml.tag!( "pentabarf:language", event.language_name )
     xml.tag!( "pentabarf:language-code", event.language )
     xml.dtstart( event.start_datetime.strftime('%Y%m%dT%H%M%S') )
-    xml.dtend( event.end_datetime.strftime('%Y%m%dT%H%M%S') )
+    xml.dtend( (event.start_datetime + event.duration).strftime('%Y%m%dT%H%M%S') )
     xml.duration( event.duration.strftime('%HH%MM%SS') )
     xml.summary( event.title + ( event.subtitle ? "- #{event.subtitle}" : "" ) )
     xml.description( event.abstract )
@@ -18,7 +18,7 @@
     xml.category( "Lecture" )
     xml.url( "#{@conference.export_base_url}events/#{event.event_id}.en.html" )
     xml.location( event.conference_room )
-    event.persons.each do | speaker |
+    View_event_person.select({:event_id => event.event_id, :event_role=>['speaker']},{:distinct=>[:name,:person_id]}).each do | speaker |
       xml.attendee( speaker.name )
     end
   end

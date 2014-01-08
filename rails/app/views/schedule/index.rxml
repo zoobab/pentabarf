@@ -28,3 +28,32 @@ xml.ul do
   end
 
 end
+
+xml.ul do
+
+  links = []
+
+  tracks = Conference_track.select(:conference_id=>@conference.conference_id)
+  tracks.each do | t |
+    links << [
+      #url_for({:conference_id=>@conference.conference_id,:action=>:track_events,:id=>t.conference_track_id,:language=>params[:language]}),
+      url_for({:conference_id=>@conference.conference_id,:action=>:track_events,:track=>t.conference_track,:language=>params[:language]}),
+      "#{t.conference_track}"
+    ]
+  end
+
+  links << [
+    url_for({:conference_id=>@conference.conference_id,:action=>:events,:language=>params[:language]}), local('schedule::map-events'),
+    url_for({:conference_id=>@conference.conference_id,:action=>:speakers,:language=>params[:language]}), local('schedule::map-speakers')
+  ]
+
+  links.each do | link |
+    xml.li do
+      xml.a(:href=>link.first) do
+        xml.span(link.last, :class=>:normal)
+      end
+    end
+  end
+
+end
+
