@@ -1,8 +1,10 @@
 xml.div(:id=>'content-travel') do
 
   xml.fieldset do
-    xml.legend local('travel')
-
+    xml.legend local('conference_person_travel')
+    xml.p :style => "color:red; font-weight:bold;" do
+      xml << "Only fill in this section if you have received instructions to do so!"
+    end
     xml.table do
       xml.tr do
         xml.td do
@@ -43,21 +45,35 @@ xml.div(:id=>'content-travel') do
 
   xml.fieldset do
     xml.legend local('conference_person_travel::accommodation')
+    xml.p :style => "color:red; font-weight:bold;" do
+      xml << "Only fill in this section if you have received instructions to do so!"
+    end
     xml.table do
-      xml << text_field_row( @conference_person_travel, :accommodation_name )
-      xml << text_field_row( @conference_person_travel, :accommodation_phone )
-      xml << text_field_row( @conference_person_travel, :accommodation_phone_room )
-      xml << text_field_row( @conference_person_travel, :accommodation_street )
-      xml << text_field_row( @conference_person_travel, :accommodation_postcode )
-      xml << text_field_row( @conference_person_travel, :accommodation_city )
-      xml << check_box_row( @conference_person_travel, :need_accommodation )
-      xml << check_box_row( @conference_person_travel, :need_accommodation_cost )
-      xml << money_currency_row( @conference_person_travel, :accommodation_cost, :accommodation_currency )
+      xml.tr do
+        xml.td :style => "width:50%;vertical-align:top;" do
+          xml.table :style => "width:100%;" do
+            xml.tr do xml.th( local( 'accommodation arranged by FOSDEM' ), {:colspan=>2}) end
+            xml << check_box_row( @conference_person_travel, :need_accommodation )
+            xml << select_row( @conference_person_travel, :accommodation_roomtype, ['', 'single', 'double', 'twin'])
+          end
+        end
+        xml.td :style => "vertical-align:top;" do
+          xml.table do
+            xml.tr do xml.th( local( 'accommodation arranged by you' ), {:colspan=>2}) end
+            xml << check_box_row( @conference_person_travel, :need_accommodation_cost )
+            xml << text_field_row( @conference_person_travel, :accommodation_name )
+            xml << money_currency_row( @conference_person_travel, :accommodation_cost, :accommodation_currency )
+            end
+          end
+      end
     end
   end
 
   xml.fieldset do
     xml.legend local('person::bank')
+    xml.p :style => "color:red; font-weight:bold;" do
+      xml << "Only fill in this section if you have received instructions to do so!"
+    end
     xml.table do
       xml << text_field_row( @person, :iban )
       xml << text_field_row( @person, :bic )

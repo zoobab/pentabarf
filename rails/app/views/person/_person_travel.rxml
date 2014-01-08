@@ -44,15 +44,24 @@ xml.div(:id=>'content-travel') do
   xml.fieldset do
     xml.legend local('conference_person_travel::accommodation')
     xml.table do
-      xml << text_field_row( @conference_person_travel, :accommodation_name )
-      xml << text_field_row( @conference_person_travel, :accommodation_phone )
-      xml << text_field_row( @conference_person_travel, :accommodation_phone_room )
-      xml << text_field_row( @conference_person_travel, :accommodation_street )
-      xml << text_field_row( @conference_person_travel, :accommodation_postcode )
-      xml << text_field_row( @conference_person_travel, :accommodation_city )
-      xml << check_box_row( @conference_person_travel, :need_accommodation )
-      xml << check_box_row( @conference_person_travel, :need_accommodation_cost )
-      xml << money_currency_row( @conference_person_travel, :accommodation_cost, :accommodation_currency )
+      xml.tr do
+        xml.td :style => "vertical-align:top;" do
+          xml.table do
+            xml.tr do xml.th( local( 'accommodation arranged by FOSDEM' ), {:colspan=>2}) end
+            xml << check_box_row( @conference_person_travel, :need_accommodation )
+            xml << select_row( @conference_person_travel, :accommodation_roomtype, ['', 'single', 'double', 'twin'])
+            xml << select_row( @conference_person_travel, :accommodation_affiliation, ['', 'FOSDEM', 'Mozilla'])
+          end
+        end
+        xml.td :style => "vertical-align:top;" do
+          xml.table do
+            xml.tr do xml.th( local( 'accommodation arranged by speaker' ), {:colspan=>2}) end
+            xml << check_box_row( @conference_person_travel, :need_accommodation_cost )
+            xml << text_field_row( @conference_person_travel, :accommodation_name )
+            xml << money_currency_row( @conference_person_travel, :accommodation_cost, :accommodation_currency )
+            end
+          end
+      end
     end
   end
 

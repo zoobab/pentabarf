@@ -30,7 +30,9 @@ CREATE TABLE base.conference_person_travel (
   fee_currency TEXT NOT NULL,
   need_travel_cost BOOL NOT NULL DEFAULT FALSE,
   need_accommodation BOOL NOT NULL DEFAULT FALSE,
-  need_accommodation_cost BOOL NOT NULL DEFAULT FALSE
+  need_accommodation_cost BOOL NOT NULL DEFAULT FALSE,
+  accommodation_roomtype TEXT,
+  accommodation_affiliation TEXT
 );
 
 CREATE TABLE conference_person_travel (
