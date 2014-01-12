@@ -23,9 +23,19 @@ class ReportController < ApplicationController
 
   def review
     @content_title = "Review Report"
-    @events = View_report_review.select({:conference_id=>@current_conference.conference_id,:translated=>POPE.user.current_language},{:order=>[:title,:subtitle]})
+  end
+
+  def review_filter
+    conditions = {}
+    conditions[:conference_id] = @current_conference.conference_id
+    conditions[:translated] = POPE.user.current_language
+    if params[:conference_track_id] != ""
+      conditions[:conference_track_id] = params[:conference_track_id]
+    end
+    @events = View_report_review.select( conditions, {:order=>[:title,:subtitle]})
     @rated = Event_rating.select({:person_id=>POPE.user.person_id}).map{|r| r.event_id}
     @rated += Event_rating_remark.select({:person_id=>POPE.user.person_id}).map{|r| r.event_id}
+    render(:partial=>'review_table')
   end
 
   protected

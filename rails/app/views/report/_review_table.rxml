@@ -1,0 +1,46 @@
+xml.table(:id=>:review_table,:class=>:sortable) do
+  xml.thead do
+    xml.tr do
+      ['event::title','event::event_state','event_rating','raters'].each do |f|
+        xml.th local(f)
+      end
+    end
+  end
+
+  xml.tbody do
+    @events.each do |e|
+      event_url = url_for({:controller=>:event,:action=>:edit,:event_id=>e.event_id})
+
+      style = ""
+      style += "background-color: moccasin;" if not @rated.member?( e.event_id )
+
+      xml.tr do
+        xml.td :style=>style do
+          xml.a({:href=>event_url}) do
+            xml.strong e.title
+            if e.subtitle
+              xml.br
+              xml.text! e.subtitle
+            end
+            ids = e.speaker_ids.split("\n")
+            names = e.speakers.split("\n")
+            xml.ul(:class=>'event-persons') do
+              ids.each_with_index do |id, idx|
+                xml.li do
+                  xml.a(names[idx],
+                    {:href=>url_for({:controller=>'person',:action=>:edit,:id=>id})})
+                end
+              end
+            end
+          end
+        end
+        xml.td :style=>style do
+          xml.a("#{e.event_state} #{e.event_state_progress}", {:href=>event_url})
+        end
+        [:rating,:raters].each do |f|
+          xml.td :style=>style do xml.a(e[f], {:href=>event_url}) end
+        end
+      end
+    end
+  end
+end
