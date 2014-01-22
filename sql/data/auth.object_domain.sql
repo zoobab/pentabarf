@@ -34,6 +34,7 @@ INSERT INTO object_domain (object, domain) VALUES ('custom_conference_person', '
 INSERT INTO object_domain (object, domain) VALUES ('custom_event', 'event');
 INSERT INTO object_domain (object, domain) VALUES ('custom_fields', 'custom');
 INSERT INTO object_domain (object, domain) VALUES ('custom_person', 'person');
+INSERT INTO object_domain (object, domain) VALUES ('dinner_menu', 'conference');
 INSERT INTO object_domain (object, domain) VALUES ('event', 'event');
 INSERT INTO object_domain (object, domain) VALUES ('event_attachment', 'event');
 INSERT INTO object_domain (object, domain) VALUES ('event_feedback', 'public');

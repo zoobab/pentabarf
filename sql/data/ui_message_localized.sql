@@ -101,6 +101,7 @@ INSERT INTO ui_message_localized (ui_message, translated, name) VALUES ('confere
 INSERT INTO ui_message_localized (ui_message, translated, name) VALUES ('conference::add_conference_track', 'pt', 'Adicionar trilha');
 INSERT INTO ui_message_localized (ui_message, translated, name) VALUES ('conference::add_event_rating_category', 'de', 'Bewertungskategorie hinzufügen');
 INSERT INTO ui_message_localized (ui_message, translated, name) VALUES ('conference::add_event_rating_category', 'en', 'Add event rating category');
+INSERT INTO ui_message_localized (ui_message, translated, name) VALUES ('conference::add_dinner_menu', 'en', 'Add dinner menu');
 INSERT INTO ui_message_localized (ui_message, translated, name) VALUES ('conference::add_link', 'de', 'Link hinzufügen');
 INSERT INTO ui_message_localized (ui_message, translated, name) VALUES ('conference::add_link', 'en', 'Add link');
 INSERT INTO ui_message_localized (ui_message, translated, name) VALUES ('conference::city', 'de', 'Stadt/Ort');
@@ -477,6 +478,13 @@ INSERT INTO ui_message_localized (ui_message, translated, name) VALUES ('day', '
 INSERT INTO ui_message_localized (ui_message, translated, name) VALUES ('day', 'pt', 'Dia');
 INSERT INTO ui_message_localized (ui_message, translated, name) VALUES ('departure', 'de', 'Abreise');
 INSERT INTO ui_message_localized (ui_message, translated, name) VALUES ('departure', 'en', 'depature');
+INSERT INTO ui_message_localized (ui_message, translated, name) VALUES ('dinner_menu', 'en', 'Dinner menu');
+INSERT INTO ui_message_localized (ui_message, translated, name) VALUES ('dinner_menu::conference_id', 'en', 'Conference');
+INSERT INTO ui_message_localized (ui_message, translated, name) VALUES ('dinner_menu::description', 'en', 'Menu');
+INSERT INTO ui_message_localized (ui_message, translated, name) VALUES ('dinner_menu::dinner_menu_id', 'en', 'Dinner menu');
+INSERT INTO ui_message_localized (ui_message, translated, name) VALUES ('dinner_menu::rank', 'en', 'Rank');
+INSERT INTO ui_message_localized (ui_message, translated, name) VALUES ('dinner_menu::title', 'en', 'Title');
+INSERT INTO ui_message_localized (ui_message, translated, name) VALUES ('dinner_menu::vegetarian', 'en', 'Vegetarian?');
 INSERT INTO ui_message_localized (ui_message, translated, name) VALUES ('event', 'de', 'Event');
 INSERT INTO ui_message_localized (ui_message, translated, name) VALUES ('event', 'en', 'Event');
 INSERT INTO ui_message_localized (ui_message, translated, name) VALUES ('event', 'pt', 'Evento');

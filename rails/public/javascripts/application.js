@@ -145,7 +145,7 @@ function table_find_fields( table_name ) {
     var children = cells[i].descendants();
     for (var j = 0; j < children.length; j++) {
       var node = children[j].nodeName.toLowerCase();
-      if ( node == "input" || node == "select" ) {
+      if ( node == "input" || node == "select" || node == "textarea" ) {
         var name = children[j].name;
         name = name.replace( /^[a-z_]+\[row_id\]\[([a-z_]+)\]$/, "$1" );
         if ( name != "remove" ) {

@@ -60,6 +60,7 @@ class ConferenceController < ApplicationController
     write_rows( Event_rating_category, params[:event_rating_category], {:preset=>{:conference_id => conf.conference_id},:ignore_empty=>:event_rating_category})
     write_rows( Conference_room_role, params[:conference_room_role], {:preset=>{:conference_id => conf.conference_id},:ignore_empty=>:conference_room_id} )
     write_file_row( Conference_image, params[:conference_image], {:preset=>{:conference_id => conf.conference_id},:image=>true})
+    write_rows( Dinner_menu, params[:dinner_menu], {:preset=>{:conference_id => conf.conference_id},:ignore_empty=>:title})
 
     POPE.user.current_conference_id ||= conf.conference_id
     redirect_to( :action => :edit, :conference_id => conf.conference_id)

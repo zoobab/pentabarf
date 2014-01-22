@@ -1,0 +1,53 @@
+xml.div(:id=>'content-speaker_dinner') do
+  menus = Dinner_menu.select({:conference_id => @conference.conference_id}, {:order=>[:rank,:title]})
+
+  xml.fieldset do
+    xml.legend( local('dinner_menu') )
+
+    xml.table(:id=>'dinner_menu_table',:style=>'display:none') do
+      xml.thead do
+        xml.tr do
+          xml.th( local('dinner_menu::title') )
+          xml.th( local('dinner_menu::vegetarian') )
+          xml.th( local('dinner_menu::description') )
+          xml.th( local('dinner_menu::rank') )
+          xml.th( local('form::remove') )
+        end
+      end
+      xml.tbody(:id=>'dinner_menu_tbody') do
+        xml.tr(:id=>'dinner_menu_template',:style=>'display:none') do
+          xml.td :style=>"vertical-align:top;" do
+            xml.input({:type=>:hidden,:id=>'dinner_menu[row_id][current_transaction_id]',:name=>'dinner_menu[row_id][current_transaction_id]'})
+            xml.input({:type=>:hidden,:id=>'dinner_menu[row_id][dinner_menu_id]',:name=>'dinner_menu[row_id][dinner_menu_id]'})
+            xml.input({:type=>:text,:id=>'dinner_menu[row_id][title]',:name=>'dinner_menu[row_id][title]'})
+          end
+          xml.td :style=>"vertical-align:top;" do
+            xml.input({:type=>:checkbox,:name=>'dinner_menu[row_id][vegetarian]',:id=>'dinner_menu[row_id][vegetarian]'})
+          end
+          xml.td :style=>"vertical-align:top;width:100%;" do
+            options = {}
+            options[:id] = options[:name] = 'dinner_menu[row_id][description]'
+            options[:rows] = 12
+            options[:style] = "width:99%;"
+            xml.textarea('', options)
+            xml << markup_syntax_help
+          end
+          xml.td :style=>"vertical-align:top;" do
+            xml.input({:type=>:text,:id=>'dinner_menu[row_id][rank]',:name=>'dinner_menu[row_id][rank]',:size=>3})
+          end
+          xml.td :style=>"vertical-align:top;" do
+            xml.input({:type=>:checkbox,:name=>'dinner_menu[row_id][remove]',:id=>'dinner_menu[row_id][remove]'})
+          end
+        end
+      end
+    end
+
+    xml.script(:type=>'text/javascript') do
+      menus.each do | m |
+        xml << js_function( 'table_add_row', 'dinner_menu', m.current_transaction_id, m.dinner_menu_id, m.title, m.vegetarian, m.description, m.rank )
+      end
+    end
+
+    xml.button( local('conference::add_dinner_menu'), {:type=>:button,:onclick=>'table_add_row("dinner_menu")'})
+  end
+end
