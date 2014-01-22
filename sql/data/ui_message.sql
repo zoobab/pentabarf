@@ -155,6 +155,11 @@ INSERT INTO ui_message (ui_message) VALUES ('conference_person_travel::departure
 INSERT INTO ui_message (ui_message) VALUES ('conference_person_travel::departure_time');
 INSERT INTO ui_message (ui_message) VALUES ('conference_person_travel::departure_to');
 INSERT INTO ui_message (ui_message) VALUES ('conference_person_travel::departure_transport');
+INSERT INTO ui_message (ui_message) VALUES ('conference_person_travel::dinner');
+INSERT INTO ui_message (ui_message) VALUES ('conference_person_travel::dinner_guest_vegetarian');
+INSERT INTO ui_message (ui_message) VALUES ('conference_person_travel::dinner_has_guest');
+INSERT INTO ui_message (ui_message) VALUES ('conference_person_travel::dinner_vegetarian');
+INSERT INTO ui_message (ui_message) VALUES ('conference_person_travel::dinner_will_attend');
 INSERT INTO ui_message (ui_message) VALUES ('conference_person_travel::fee');
 INSERT INTO ui_message (ui_message) VALUES ('conference_person_travel::fee_currency');
 INSERT INTO ui_message (ui_message) VALUES ('conference_person_travel::need_accommodation');

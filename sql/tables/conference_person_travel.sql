@@ -33,7 +33,11 @@ CREATE TABLE base.conference_person_travel (
   need_accommodation_cost BOOL NOT NULL DEFAULT FALSE,
   accommodation_roomtype TEXT,
   accommodation_affiliation TEXT,
-  accommodation_roommate INTEGER
+  accommodation_roommate INTEGER,
+  dinner_will_attend BOOL NOT NULL DEFAULT FALSE,
+  dinner_has_guest BOOL NOT NULL DEFAULT FALSE,
+  dinner_vegetarian BOOL NOT NULL DEFAULT FALSE,
+  dinner_guest_vegetarian BOOL NOT NULL DEFAULT FALSE
 );
 
 CREATE TABLE conference_person_travel (

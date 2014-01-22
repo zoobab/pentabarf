@@ -74,6 +74,16 @@ xml.div(:id=>'content-travel') do
   end
 
   xml.fieldset do
+    xml.legend local('conference_person_travel::dinner')
+    xml.table do
+      xml << check_box_row( @conference_person_travel, :dinner_will_attend)
+      xml << check_box_row( @conference_person_travel, :dinner_vegetarian)
+      xml << check_box_row( @conference_person_travel, :dinner_has_guest)
+      xml << check_box_row( @conference_person_travel, :dinner_guest_vegetarian)
+    end
+  end
+
+  xml.fieldset do
     xml.legend local('person::bank')
     xml.table do
       xml << text_field_row( @person, :iban )

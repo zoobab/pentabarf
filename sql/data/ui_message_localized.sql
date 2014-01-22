@@ -383,6 +383,11 @@ INSERT INTO ui_message_localized (ui_message, translated, name) VALUES ('confere
 INSERT INTO ui_message_localized (ui_message, translated, name) VALUES ('conference_person_travel::departure_transport', 'de', 'Verkehrsmittel');
 INSERT INTO ui_message_localized (ui_message, translated, name) VALUES ('conference_person_travel::departure_transport', 'en', 'Transport');
 INSERT INTO ui_message_localized (ui_message, translated, name) VALUES ('conference_person_travel::departure_transport', 'pt', 'Transportes');
+INSERT INTO ui_message_localized (ui_message, translated, name) VALUES ('conference_person_travel::dinner', 'en', 'Speaker dinner');
+INSERT INTO ui_message_localized (ui_message, translated, name) VALUES ('conference_person_travel::dinner_guest_vegetarian', 'en', 'Guest vegetarian?');
+INSERT INTO ui_message_localized (ui_message, translated, name) VALUES ('conference_person_travel::dinner_has_guest', 'en', 'Bringing a guest?');
+INSERT INTO ui_message_localized (ui_message, translated, name) VALUES ('conference_person_travel::dinner_vegetarian', 'en', 'Vegetarian?');
+INSERT INTO ui_message_localized (ui_message, translated, name) VALUES ('conference_person_travel::dinner_will_attend', 'en', 'Attending?');
 INSERT INTO ui_message_localized (ui_message, translated, name) VALUES ('conference_person_travel::fee', 'de', 'Honorar (n. Vereinb.)');
 INSERT INTO ui_message_localized (ui_message, translated, name) VALUES ('conference_person_travel::fee', 'en', 'Fee');
 INSERT INTO ui_message_localized (ui_message, translated, name) VALUES ('conference_person_travel::fee', 'pt', 'Honorários');
