@@ -22,6 +22,7 @@
 \i views/person_image_modification.sql
 \i views/person_rating.sql
 \i views/recent_changes.sql
+\i views/report/report_accommodation.sql
 \i views/report/report_arrived.sql
 \i views/report/report_not_arrived.sql
 \i views/report/report_events.sql
