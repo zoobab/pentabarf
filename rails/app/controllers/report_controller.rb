@@ -4,7 +4,7 @@ class ReportController < ApplicationController
   before_filter :init
   around_filter :update_last_login
 
-  REPORTS = [:arrived,:not_arrived,:pickup,:expenses,:feedback,:missing,:paper,:slides,:resources,:review]
+  REPORTS = [:accommodation,:arrived,:not_arrived,:pickup,:expenses,:feedback,:missing,:paper,:slides,:resources,:review]
 
   def index
   end
@@ -14,6 +14,11 @@ class ReportController < ApplicationController
       @content_title = "#{params[:action].capitalize} Report"
       @rows = "View_report_#{report}".constantize.select({:conference_id=>@current_conference.conference_id})
     end
+  end
+
+  def accommodation
+    @content_title = "Accommodation Report"
+    @rows = View_report_accommodation.select(:conference_id=>@current_conference.conference_id)
   end
 
   def pickup

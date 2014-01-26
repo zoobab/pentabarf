@@ -1,0 +1,27 @@
+xml.div({:id=>:data}) do
+
+  xml.table({:id=>:report_accommodation_table,:class=>:sortable}) do
+    xml.thead do
+      xml.tr do
+        xml.th "Name"
+        xml.th "Room type"
+        xml.th "Affiliation"
+        xml.th "Arrival"
+        xml.th "Departure"
+      end
+    end
+
+    xml.tbody do
+      @rows.each do | row |
+        url = url_for({:controller=>'person',:action=>:edit,:person_id=>row.person_id})
+        xml.tr do
+          xml.td do xml.a( row.name, {:href=>url}) end
+	  xml.td do xml.text row.accommodation_roomtype end
+	  xml.td do xml.text row.accommodation_affiliation end
+	  xml.td do xml.text row.arrival_date end
+	  xml.td do xml.text row.departure_date end
+        end
+      end
+    end
+  end
+end
