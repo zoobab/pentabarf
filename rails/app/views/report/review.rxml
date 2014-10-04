@@ -25,7 +25,7 @@ end
 
 xml.script(:type=>'text/javascript') do
   xml.text! <<-JS
-    new Form.Observer('review_filter', 1, function(element, value) { new Ajax.Updater('review_table', '#{url_for(:action=>:review_filter)}', { asynchronous:true, evalScripts:false, onComplete:function(request){Element.hide('search-indicator');sortables_init()}, onLoading:function(request){Element.show('search-indicator')}, parameters:value });});
-    new Ajax.Updater('review_table', '#{url_for(:action=>:review_filter)}', { asynchronous:true, evalScripts:false, onComplete:function(request){Element.hide('search-indicator');sortables_init()}, onLoading:function(request){Element.show('search-indicator')},parameters:$('review_filter').serialize()});
+    new Form.Observer('review_filter', 1, function(element, value) { new Ajax.Updater('review_table', '#{url_for(:action=>:review_filter)}', { asynchronous:true, evalScripts:false, onComplete:function(request){Element.hide('search-indicator');Element.show('review_table');sortables_init()}, onLoading:function(request){Element.hide('review_table');Element.show('search-indicator')}, parameters:value });});
+    new Ajax.Updater('review_table', '#{url_for(:action=>:review_filter)}', { asynchronous:true, evalScripts:false, onComplete:function(request){Element.hide('search-indicator');Element.show('review_table');sortables_init()}, onLoading:function(request){Element.show('search-indicator');Element.hide('review_table')},parameters:$('review_filter').serialize()});
   JS
 end
