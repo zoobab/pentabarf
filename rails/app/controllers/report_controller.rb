@@ -37,6 +37,13 @@ class ReportController < ApplicationController
     if params[:conference_track_id] != ""
       conditions[:conference_track_id] = params[:conference_track_id]
     end
+    if params[:exclude_rejected] == "on"
+      conditions[:event_state] ||= {}
+      conditions[:event_state][:ne] = "rejected"
+    end
+    if params[:exclude_rated_by_me] != ""
+      @exclude_rated_by_me = params[:exclude_rated_by_me]
+    end
     @events = View_report_review.select( conditions, {:order=>[:title,:subtitle]})
     @rated = Event_rating.select({:person_id=>POPE.user.person_id}).map{|r| r.event_id}
     @rated += Event_rating_remark.select({:person_id=>POPE.user.person_id}).map{|r| r.event_id}

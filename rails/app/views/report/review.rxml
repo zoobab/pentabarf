@@ -1,16 +1,24 @@
 xml.div(:id=>:data) do
 
+  xml.form(:id=>:review_filter,:action=>url_for) do
   xml.fieldset do
-    xml.legend("Track")
-    xml.form(:id=>:review_filter,:action=>url_for) do
-      xml << select_tag('conference_track_id', @current_conference.tracks.map{|t|
-          [t.conference_track_id, t.conference_track]}, {:with_empty=>true})
-      xml.label("Searching ...", {:id=>"search-indicator",:style=>"display:none"})
-    end
+    xml.legend("Review track")
+    xml << select_tag('conference_track_id', @current_conference.tracks({},{:order=>:conference_track}).map{|t|
+      [t.conference_track_id, t.conference_track]}, {:with_empty=>true})
+  end
+  xml.fieldset do
+    xml.legend("Report options")
+    xml.input({:type=>:checkbox,:name=>'exclude_rated_by_me'})
+    xml.text "Exclude submissions rated by me"
+    xml.br
+    xml.input({:type=>:checkbox,:name=>'exclude_rejected'})
+    xml.text "Exclude rejected submissions"
+  end
   end
 
   xml.fieldset do
     xml.legend("Submissions")
+    xml.label("Searching ...", {:id=>"search-indicator",:style=>"display:none"})
     xml.div({:id=>:review_table})
   end
 end
