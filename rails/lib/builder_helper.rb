@@ -57,13 +57,18 @@ module Builder_helper
   def text_area_fieldset( row, column, options = {} )
     tag_options = options.clone
     # clean options passed to tag creation
-    [:label,:counter,:markup_help].each do | name | tag_options.delete( name ) end
+    [:label,:counter,:markup_help,:hint].each do | name | tag_options.delete( name ) end
 
     table = row.class.table.table_name
     xml = Builder::XmlMarkup.new
     label = options[:label] || local("#{table}::#{column}")
     xml.fieldset do
       xml.legend( label )
+      if options[:hint] then
+      xml.p do
+        xml << options[:hint]
+      end
+      end
       tag_options[:id] = tag_options[:name] = "#{table}[#{column}]"
       tag_options[:tabindex] = 0
       xml.textarea( row[column], tag_options )
