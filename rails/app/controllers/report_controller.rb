@@ -37,9 +37,16 @@ class ReportController < ApplicationController
     if params[:conference_track_id] != ""
       conditions[:conference_track_id] = params[:conference_track_id]
     end
-    if params[:exclude_rejected] == "on"
-      conditions[:event_state] ||= {}
-      conditions[:event_state][:ne] = "rejected"
+    conditions[:OR] ||= []
+    conditions[:OR] << {:event_state=>{:eq=>""}}
+    if params[:include_accepted] == "on"
+      conditions[:OR] << {:event_state=>{:eq=>"accepted"}}
+    end
+    if params[:include_rejected] == "on"
+      conditions[:OR] << {:event_state=>{:eq=>"rejected"}}
+    end
+    if params[:include_undecided] == "on"
+      conditions[:OR] << {:event_state=>{:eq=>"undecided"}}
     end
     if params[:exclude_rated_by_me] != ""
       @exclude_rated_by_me = params[:exclude_rated_by_me]

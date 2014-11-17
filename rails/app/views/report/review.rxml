@@ -7,12 +7,18 @@ xml.div(:id=>:data) do
       [t.conference_track_id, t.conference_track]}, {:with_empty=>true})
   end
   xml.fieldset do
+    xml.legend("Event states")
+    xml.input({:type=>:checkbox,:name=>'include_accepted'})
+    xml.text "accepted"
+    xml.input({:type=>:checkbox,:name=>'include_rejected'})
+    xml.text "rejected"
+    xml.input({:type=>:checkbox,:name=>'include_undecided',:checked=>true})
+    xml.text "undecided"
+  end
+  xml.fieldset do
     xml.legend("Report options")
-    xml.input({:type=>:checkbox,:name=>'exclude_rated_by_me'})
+    xml.input({:type=>:checkbox,:name=>'exclude_rated_by_me',:checked=>true})
     xml.text "Exclude submissions rated by me"
-    xml.br
-    xml.input({:type=>:checkbox,:name=>'exclude_rejected'})
-    xml.text "Exclude rejected submissions"
   end
   end
 
