@@ -24,5 +24,5 @@ CREATE OR REPLACE FUNCTION conflict.conflict_event_without_break_after( INTEGER 
     )
   WHERE
     e1.conference_id = $1;
-$$ LANGUAGE 'SQL';
+$$ LANGUAGE SQL;
 
