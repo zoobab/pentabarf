@@ -1,6 +1,7 @@
 xml.table(:id=>:review_table,:class=>:sortable) do
   xml.thead do
     xml.tr do
+      xml.th "Number"
       ['event::title','event::event_state','event_rating','raters'].each do |f|
         xml.th local(f)
       end
@@ -8,7 +9,9 @@ xml.table(:id=>:review_table,:class=>:sortable) do
   end
 
   xml.tbody do
+    counter = 0
     @events.each do |e|
+      counter += 1
       event_url = url_for({:controller=>:event,:action=>:edit,:event_id=>e.event_id})
 
       next if @exclude_rated_by_me and @rated.member?(e.event_id)
@@ -17,6 +20,9 @@ xml.table(:id=>:review_table,:class=>:sortable) do
       style += "background-color: moccasin;" if not @rated.member?( e.event_id )
 
       xml.tr do
+        xml.td :style=>style do
+        xml.text counter
+        end
         xml.td :style=>style do
           xml.a({:href=>event_url}) do
             xml.strong e.title
