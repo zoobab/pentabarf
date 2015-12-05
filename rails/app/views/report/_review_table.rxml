@@ -11,10 +11,10 @@ xml.table(:id=>:review_table,:class=>:sortable) do
   xml.tbody do
     counter = 0
     @events.each do |e|
-      counter += 1
       event_url = url_for({:controller=>:event,:action=>:edit,:event_id=>e.event_id})
 
       next if @exclude_rated_by_me and @rated.member?(e.event_id)
+      counter += 1
 
       style = ""
       style += "background-color: moccasin;" if not @rated.member?( e.event_id )
