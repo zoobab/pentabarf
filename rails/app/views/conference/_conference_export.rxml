@@ -25,6 +25,7 @@ xml.div(:id=>'content-export') do
       xml << check_box_row( @conference, :f_submission_enabled )
       xml << check_box_row( @conference, :f_submission_new_events )
       xml << check_box_row( @conference, :f_submission_writable )
+      xml << check_box_row( @conference, :f_reconfirmation_enabled )
       xml << check_box_row( @conference, :f_feedback_enabled )
     end
   end
