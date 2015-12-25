@@ -4,9 +4,19 @@ class ReportController < ApplicationController
   before_filter :init
   around_filter :update_last_login
 
-  REPORTS = [:accommodation,:arrived,:not_arrived,:pickup,:expenses,:feedback,:missing,:paper,:slides,:resources,:review]
+  ADMIN_REPORTS = [:accommodation,:arrived,:not_arrived,:pickup,:expenses]
+  REPORTS = [:feedback,:missing,:paper,:slides,:resources,:review]
 
   def index
+  end
+
+  ADMIN_REPORTS.each do | report |
+    define_method( report ) do
+      if POPE.permission?('account::modify') # global admins
+        @content_title = "#{params[:action].capitalize} Report"
+        @rows = "View_report_#{report}".constantize.select({:conference_id=>@current_conference.conference_id})
+      end
+    end
   end
 
   REPORTS.each do | report |

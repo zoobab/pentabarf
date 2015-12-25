@@ -1,5 +1,10 @@
 xml.div({:id=>:data}) do
   xml.ul do
+    ReportController::ADMIN_REPORTS.each do | report |
+      xml.li do
+        xml.a( local("report::#{report}"),{:href=>url_for({:action=>report})})
+      end
+    end if POPE.permission?('account::modify') # global admins
     ReportController::REPORTS.each do | report |
       xml.li do
         xml.a( local("report::#{report}"),{:href=>url_for({:action=>report})})
