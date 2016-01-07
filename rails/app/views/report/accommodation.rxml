@@ -3,6 +3,7 @@ xml.div({:id=>:data}) do
   xml.table({:id=>:report_accommodation_table,:class=>:sortable}) do
     xml.thead do
       xml.tr do
+        xml.th "Number"
         xml.th "Name"
         xml.th "Room type"
         xml.th "Roommate"
@@ -13,9 +14,12 @@ xml.div({:id=>:data}) do
     end
 
     xml.tbody do
+      counter = 0
       @rows.each do | row |
         url = url_for({:controller=>'person',:action=>:edit,:person_id=>row.person_id})
         xml.tr do
+	  counter += 1
+	  xml.td do xml.text counter end
           xml.td do xml.a( row.name, {:href=>url}) end
 	  xml.td do xml.text row.accommodation_roomtype end
 	  xml.td do xml.text row.accommodation_roommate end
