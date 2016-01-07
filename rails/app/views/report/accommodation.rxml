@@ -5,6 +5,7 @@ xml.div({:id=>:data}) do
       xml.tr do
         xml.th "Name"
         xml.th "Room type"
+        xml.th "Roommate"
         xml.th "Affiliation"
         xml.th "Arrival"
         xml.th "Departure"
@@ -17,6 +18,7 @@ xml.div({:id=>:data}) do
         xml.tr do
           xml.td do xml.a( row.name, {:href=>url}) end
 	  xml.td do xml.text row.accommodation_roomtype end
+	  xml.td do xml.text row.accommodation_roommate end
 	  xml.td do xml.text row.accommodation_affiliation end
 	  xml.td do xml.text row.arrival_date end
 	  xml.td do xml.text row.departure_date end
