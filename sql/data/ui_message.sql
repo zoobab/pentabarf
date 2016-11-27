@@ -336,6 +336,7 @@ INSERT INTO ui_message (ui_message) VALUES ('event_origin_localized::event_origi
 INSERT INTO ui_message (ui_message) VALUES ('event_origin_localized::name');
 INSERT INTO ui_message (ui_message) VALUES ('event_origin_localized::translated');
 INSERT INTO ui_message (ui_message) VALUES ('event_person');
+INSERT INTO ui_message (ui_message) VALUES ('event_person::event_conference_track');
 INSERT INTO ui_message (ui_message) VALUES ('event_person::event_id');
 INSERT INTO ui_message (ui_message) VALUES ('event_person::event_person_id');
 INSERT INTO ui_message (ui_message) VALUES ('event_person::event_role');

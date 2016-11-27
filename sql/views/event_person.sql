@@ -16,12 +16,15 @@ CREATE OR REPLACE VIEW view_event_person AS
          view_person.name,
          event_role_localized.translated,
          event_role_localized.name AS event_role_name,
-         event_role_state_localized.name AS event_role_state_name
+         event_role_state_localized.name AS event_role_state_name,
+         event.conference_track_id,
+         conference_track.conference_track AS event_conference_track
     FROM event_person
          INNER JOIN event USING (event_id)
          INNER JOIN conference USING (conference_id)
          INNER JOIN view_person USING (person_id)
          INNER JOIN event_role_localized USING (event_role)
          LEFT OUTER JOIN event_role_state_localized USING (event_role,event_role_state,translated)
+         LEFT OUTER JOIN conference_track USING (conference_track_id)
 ;
 

@@ -58,7 +58,7 @@ xml.div(:id=>'content-events') do
       xml.table({:id=>'other_events_table',:class=>'sortable'}) do
         xml.thead do 
           xml.tr do 
-            ['conference::acronym','event_person::event_id','event_person::event_role','event_person::event_role_state'].each do | field |
+            ['conference::acronym','event_person::event_id','event_person::event_conference_track','event_person::event_role','event_person::event_role_state'].each do | field |
               xml.th local( field )
             end
           end
@@ -66,7 +66,7 @@ xml.div(:id=>'content-events') do
         xml.tbody do
           other_events.each do | event |
             xml.tr({:class=>event.event_state}) do
-              fields = [:acronym,:title,:event_role,:event_role_state]
+              fields = [:acronym,:title,:event_conference_track,:event_role,:event_role_state]
               fields.each do | field |
                 xml.td do
                   xml.a( event.send( field ), :href=>url_for(:controller=>'event',:action=>:edit,:event_id=>event.event_id) )

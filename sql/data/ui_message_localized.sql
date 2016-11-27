@@ -726,6 +726,8 @@ INSERT INTO ui_message_localized (ui_message, translated, name) VALUES ('event_l
 INSERT INTO ui_message_localized (ui_message, translated, name) VALUES ('event_link_internal::link_type', 'en', 'Link type');
 INSERT INTO ui_message_localized (ui_message, translated, name) VALUES ('event_link_internal::url', 'de', 'URL');
 INSERT INTO ui_message_localized (ui_message, translated, name) VALUES ('event_link_internal::url', 'en', 'URL');
+INSERT INTO ui_message_localized (ui_message, translated, name) VALUES ('event_person::event_conference_track', 'de', 'Track');
+INSERT INTO ui_message_localized (ui_message, translated, name) VALUES ('event_person::event_conference_track', 'en', 'Track');
 INSERT INTO ui_message_localized (ui_message, translated, name) VALUES ('event_person::event_id', 'de', 'Veranstaltung');
 INSERT INTO ui_message_localized (ui_message, translated, name) VALUES ('event_person::event_id', 'en', 'Event');
 INSERT INTO ui_message_localized (ui_message, translated, name) VALUES ('event_person::event_id', 'pt', 'Evento');
