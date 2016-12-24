@@ -32,7 +32,17 @@ CREATE OR REPLACE VIEW view_report_review AS
         ORDER BY view_person.name, event_person.person_id
       ), E'\n'::text) AS speakers,
     coalesce( ( SELECT COUNT(person_id) FROM (SELECT person_id FROM event_rating WHERE event_id = event.event_id GROUP BY person_id) AS unique_rater ), 0 ) AS raters,
-    ( SELECT coalesce( SUM( (rating - 3) * 50 ) / COUNT( rating ), 0 ) FROM event_rating WHERE event_id = event.event_id ) AS rating
+    ( SELECT coalesce( SUM( (rating - 3) * 50 ) / COUNT( rating ), 0 ) FROM event_rating WHERE event_id = event.event_id ) AS rating,
+    array_to_string(ARRAY(
+      SELECT view_person.email
+        FROM
+          event_person
+          INNER JOIN event_role ON (event_role.event_role = event_person.event_role AND event_role.public = TRUE)
+          INNER JOIN view_person USING (person_id)
+        WHERE
+          event_person.event_id = event.event_id
+        ORDER BY view_person.name, event_person.person_id
+      ), E'\n'::text) AS emails
   FROM
     event
     LEFT OUTER JOIN event_state_localized USING (event_state)

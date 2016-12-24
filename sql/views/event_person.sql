@@ -18,7 +18,8 @@ CREATE OR REPLACE VIEW view_event_person AS
          event_role_localized.name AS event_role_name,
          event_role_state_localized.name AS event_role_state_name,
          event.conference_track_id,
-         conference_track.conference_track AS event_conference_track
+         conference_track.conference_track AS event_conference_track,
+         view_person.email AS event_person_email
     FROM event_person
          INNER JOIN event USING (event_id)
          INNER JOIN conference USING (conference_id)
