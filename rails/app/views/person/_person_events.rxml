@@ -7,7 +7,7 @@ xml.div(:id=>'content-events') do
     xml.table(:id=>'event_person_table',:style=>event_persons.length > 0 ? '' : 'display:none;') do
       xml.thead do
         xml.tr do
-          ['event::title','event_person::event_role','event_person::event_role_state','event_person::remark','form::remove'].each do | field | xml.th local( field ) end
+          ['event::title','event_person::event_conference_track','event_person::event_role','event_person::event_role_state','event_person::remark','form::remove'].each do | field | xml.th local( field ) end
         end
       end
       xml.tbody(:id=>'event_person_tbody') do
@@ -17,6 +17,7 @@ xml.div(:id=>'content-events') do
             xml.input({:type=>:hidden,:id=>'event_person[row_id][event_person_id]',:name=>'event_person[row_id][event_person_id]'})
             xml << select_tag( 'event_person[row_id][event_id]', Event.select({:conference_id=>@current_conference.conference_id},{:order=>:title}).map{|e| [e.event_id, e.title]} )
           end
+	  xml.td 
           xml.td do xml << select_tag( 'event_person[row_id][event_role]', Event_role.select.map{|e| e.event_role},{:master=>:event_role_state}) end
           xml.td do xml << select_tag( 'event_person[row_id][event_role_state]', Event_role_state.select.map{|e| [e.event_role_state,e.event_role,e.event_role_state]}, {:slave=>true,:with_empty=>true}) end
           xml.td do xml.input({:type=>:text,:id=>'event_person[row_id][remark]',:name=>'event_person[row_id][remark]'}) end
@@ -31,6 +32,7 @@ xml.div(:id=>'content-events') do
               xml.input({:type=>:hidden,:id=>"event_person[#{index}][event_person_id]",:name=>"event_person[#{index}][event_person_id]",:value=>ep.event_person_id})
               xml.a(ep.title,{:href=>url_for(:controller=>'event',:action=>:edit,:event_id=>ep.event_id)})
             end
+	    xml.td ep.event_conference_track
             xml.td do xml << select_tag( "event_person[#{index}][event_role]", Event_role.select.map{|e| e.event_role},{:master=>:event_role_state,:selected=>ep.event_role}) end
             xml.td do
               xml << select_tag( "event_person[#{index}][event_role_state]", Event_role_state.select.map{|e| [e.event_role_state,e.event_role,e.event_role_state]}, {:slave=>true,:with_empty=>true,:selected=>ep.event_role_state,:style=>ep.event_role_state ? '' : 'display:none'})
