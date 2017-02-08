@@ -9,6 +9,7 @@ xml.div({:id=>:data}) do
   xml.table({:id=>:report_feedback_table,:class=>:sortable}) do
     xml.thead do
       xml.tr do
+	xml.th "Number"
         xml.th( local( 'event::title'), {:colspan=>2} )
         xml.th( local( 'event_feedback::content_quality' ) )
         xml.th( local( 'event_feedback::presentation_quality' ) )
@@ -18,18 +19,23 @@ xml.div({:id=>:data}) do
     end
 
     xml.tbody do
+      counter = 0
       @rows.each do | row |
+	counter += 1
         xml.tr({:style=>"background-color: #{track_color[row.conference_track]}"}) do
-          xml.td do
+          xml.td({:style=>"background-color: #{track_color[row.conference_track]}"}) do
+	    xml.text counter
+	  end
+          xml.td({:style=>"background-color: #{track_color[row.conference_track]}"}) do
             xml.a({:href=>url_for(:controller=>'event',:action=>:edit,:event_id=>row.event_id)}) do
               xml.img({:src=>url_for(:controller=>'image',:action=>:event,:id=>row.event_id,:size=>'24x24')})
             end
           end
-          xml.td do
+          xml.td({:style=>"background-color: #{track_color[row.conference_track]}"}) do
             xml << format_event( row )
           end
           [:content_quality,:presentation_quality,:comments,:votes].each do | field |
-            xml.td do
+            xml.td({:style=>"background-color: #{track_color[row.conference_track]}"}) do
               xml.a(row[field],{:href=>url_for(:controller=>'event',:action=>:edit,:event_id=>row.event_id)})
             end
           end
@@ -39,6 +45,7 @@ xml.div({:id=>:data}) do
 
     xml.tfoot do
       xml.tr do
+	xml.th "Number"
         xml.th( local( 'event::title'), {:colspan=>2} )
         xml.th( local( 'event_feedback::content_quality' ) )
         xml.th( local( 'event_feedback::presentation_quality' ) )
