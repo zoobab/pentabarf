@@ -11,6 +11,7 @@ xml.div({:id=>:data}) do
       xml.tr do
 	xml.th "Number"
         xml.th( local( 'event::title'), {:colspan=>2} )
+        xml.th( local( 'event::conference_track' ) )
         xml.th( local( 'event_feedback::content_quality' ) )
         xml.th( local( 'event_feedback::presentation_quality' ) )
         xml.th( local( 'comments' ) )
@@ -34,6 +35,9 @@ xml.div({:id=>:data}) do
           xml.td({:style=>"background-color: #{track_color[row.conference_track]}"}) do
             xml << format_event( row )
           end
+          xml.td({:style=>"background-color: #{track_color[row.conference_track]}"}) do
+	    xml << row.conference_track.to_s
+	  end
           [:content_quality,:presentation_quality,:comments,:votes].each do | field |
             xml.td({:style=>"background-color: #{track_color[row.conference_track]}"}) do
               xml.a(row[field],{:href=>url_for(:controller=>'event',:action=>:edit,:event_id=>row.event_id)})
@@ -47,6 +51,7 @@ xml.div({:id=>:data}) do
       xml.tr do
 	xml.th "Number"
         xml.th( local( 'event::title'), {:colspan=>2} )
+        xml.th( local( 'event::conference_track' ) )
         xml.th( local( 'event_feedback::content_quality' ) )
         xml.th( local( 'event_feedback::presentation_quality' ) )
         xml.th( local( 'comments' ) )
