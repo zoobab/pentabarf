@@ -1,3 +1,4 @@
+[![noswpatv3](http://zoobab.wdfiles.com/local--files/start/noupcv3.jpg)](https://ffii.org/donate-now-to-save-europe-from-software-patents-says-ffii/)
 
 FOSDEM runs a ~~severely~~ somewhat mangled version of Pentabarf.  Over
 the years, we have pulled in many patches from many places and grown a
